@@ -1,0 +1,260 @@
+#!/bin/sh
+# ssha
+# verify that ssh agents are setup
+# normally this script is sourced (. ~/bin/ssha) so care must be taken
+# to NOT exit. If you source this script, set ssha_functions=true
+
+# the following will not work since we are sourcing this file
+# program=$(basename $0)
+sshinfo=$HOME/.ssh-agent-info
+
+vecho_ssha() {
+  [ -z "$verbose_ssha" ]  || echo >&2 "$@"
+}
+
+vcmd_ssha () {
+  vecho_ssha $*
+  $*
+}
+
+err()
+{
+  echo "ssha: $*"
+}
+
+do_ssha_usage() {
+  cat >&2 << EOF
+usage: ssha [OPTIONS] ACTION
+       ACTIONS
+         check  (default)
+         connect
+         start
+         stop
+         restart
+       OPTIONS
+           [-v]        verbose
+         [-h]        help
+           [-f]        force (for forcing a new instance)
+EOF
+}
+
+showenv_ssha() {
+  echo SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-"unset"}
+  echo SSH_AGENT_PID=${SSH_AGENT_PID:-"unset"}
+  echo SSHA=${SSHA:-"unset"}
+}
+
+do_ssha_check() {
+  local a
+  vecho_ssha "--- ssha check ---"
+  [ -z "$verbose_ssha" ]  || showenv_ssha
+  a="`ssh-add -l 2>&1 | head -1 | cut -c1-4`"
+  if [ "$a" = "2048" -o "$a" = "1024" ]; then
+    vecho_ssha "connected to SSH agent (has at least one identity)"
+  else
+    if [ "$a" = "The " ]; then
+      vecho_ssha "connected to SSH agent (no identities.. do ssh-add now)"
+      return 2
+    else
+      vecho_ssha "no SSH agent: $a"
+      unset SSH_AUTH_SOCK
+      unset SSH_AGENT_PID
+      unset SSHA
+      rm -f $sshinfo
+      return 1
+    fi
+  fi
+  return 0
+}
+
+do_ssha_connect() {
+  local rv=0
+  vecho_ssha "--- ssha connect ---"
+  if [ -r "$sshinfo" ]; then
+    . $sshinfo
+    export SSH_AUTH_SOCK
+    export SSH_AGENT_PID
+    export SSHA
+    do_ssha_check
+    rv=$?
+  else
+    vecho_ssha "file not found: $sshinfo"     
+    rv=1
+  fi
+  if [ $rv -eq 1 ]; then
+    # see if there is an agent, but just not recorded correctly
+    # echo see if there is an agent, but just not recorded correctly
+    agent=$(find /tmp -user $USER -name 'agent.*' 2> /dev/null)
+    if [ -e "$agent" ]; then
+      # echo checking this agent... $agent
+      export SSH_AUTH_SOCK="$agent"
+      export SSH_AGENT_PID=$(echo $agent | cut -d. -f2)
+      if [ -e "/proc/$SSH_AGENT_PID/comm" ]; then
+        comm="$(cat /proc/$SSH_AGENT_PID/comm)"
+      else
+        comm=""
+      fi
+      if [ "$comm" != "ssh-agent" ]; then
+        # try one pid higher
+        export SSH_AGENT_PID=$(($SSH_AGENT_PID + 1))
+        if [ -e "/proc/$SSH_AGENT_PID/comm" ]; then
+          comm="$(cat /proc/$SSH_AGENT_PID/comm)"
+        else
+          comm=""
+        fi
+        if [ "$comm" != "ssh-agent" ]; then
+	  unset SSH_AGENT_PID
+        fi
+      fi
+      do_ssha_check
+      rv=$?
+      if [ $rv -ne 1 ]; then
+        vecho_ssha "found and connected to a running ssh-agent"
+        export SSHA="$(date)"
+        echo SSH_AUTH_SOCK=${SSH_AUTH_SOCK} > $sshinfo
+        echo SSH_AGENT_PID=${SSH_AGENT_PID} >> $sshinfo
+      fi
+    fi
+  fi
+  return $rv
+}
+
+do_ssha_start_agent() {
+    vecho_ssha "Starting SSH agent"
+    eval $(ssh-agent) > /dev/null 2>&1
+    export SSH_AUTH_SOCK
+    export SSH_AGENT_PID
+    export SSHA="$(date)"
+    echo SSH_AUTH_SOCK=${SSH_AUTH_SOCK} > $sshinfo
+    echo SSH_AGENT_PID=${SSH_AGENT_PID} >> $sshinfo
+}
+
+do_ssha_start() {
+    local check
+    vecho_ssha "--- ssha start ---"
+    if [ -n "$force_ssha" ]; then
+        do_ssha_start_agent
+    else
+        do_ssha_check
+        check=$?
+        if [ $check -eq 0 ]; then
+            #verbose_ssha=$oldverbose
+            vecho_ssha "SSH agent already running with key(s)"
+        else
+            if [ $check -eq 1 ]; then # no ssh agent
+                do_ssha_connect
+                check=$?
+                if [ $check -eq 0 ]; then
+                    vecho_ssha "Connected to a running SSH agent with key(s)"
+                    return 0
+                else
+                    if [ $check -eq 2 ]; then
+                        vecho_ssha "Connected to a running SSH agent without key(s)"
+                        return 2
+                        
+                    else
+                        do_ssha_start_agent
+                    fi
+                fi
+            fi
+        fi
+    fi
+    return 0
+}
+
+do_ssha_stop() {
+  vecho_ssha "--- ssha stop ---"
+  local check pid # oldverbose=$verbose_ssha
+  #verbose_ssha=""
+  do_ssha_check
+  check=$?
+  if [ $check -eq 1 ]; then
+    #verbose_ssha=$oldverbose
+    vecho_ssha "cannot stop SSH agent: not running"
+  else
+    #verbose_ssha=$oldverbose
+    if [ -z "$SSH_AGENT_PID" ]; then
+      vecho_ssha "Not stopping SSH agent: SSH_AGENT_PID is not set"
+    else
+      vecho_ssha "Stopping SSH agent"
+      pid=$SSH_AGENT_PID
+      if kill -0 $pid > /dev/null 2>&1 ; then
+        unset SSH_AUTH_SOCK
+        unset SSH_AGENT_PID
+        unset SSHA
+        rm -f $sshinfo
+        kill $pid
+        sleep 1
+      else
+        err "could not find PID for the ssh-agent"
+      fi
+    fi
+  fi
+  return 0
+}
+
+do_ssha_restart() {
+  do_ssha_stop
+  do_ssha_start
+}
+
+do_ssha_passwordless() {
+  if do_ssha_connect; then
+    vecho_ssha "connected to the ssh-agent"
+  else
+    vecho_ssha "not connected to the ssh-agent, starting one now..."
+    do_ssha_start
+  fi
+  if ! do_ssha_check; then
+    vecho_ssha "adding key to ssh-agent..."
+    if ! ssh-add > /dev/null 2>&1 ; then
+      err "ssh key could not be added to ssh-agent (is it passwordless?)."
+    fi
+  fi
+}
+
+validaction() {
+  local a
+  for a in $actions_ssha; do
+    if [ "$1" = "$a" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [ -z "$ssha_functions" ]; then
+    actions_ssha="check connect start stop restart passwordless"
+    action_ssha="check"
+    args_ssha=""
+    verbose_ssha=""
+    force_ssha=""
+    while [ "$#" -gt 0 ]; do
+        #echo "arg=$1="
+        case "$1" in
+            (-v|--verbose)
+                verbose_ssha="--verbose"
+                ;;
+            (-h|--help)
+                action_ssha="usage"
+                break
+                ;;
+            (-f|--force)
+                force_ssha="--force"
+                ;;
+            (-*)
+                action_ssha="usage"
+                ;;
+            (*)
+                args_ssha="$1"
+                if [ $# -gt 1 ] || ! validaction $args_ssha; then
+                    action_ssha="usage"
+                else
+                    action_ssha="$args_ssha"
+                fi
+                ;;
+        esac
+        shift
+    done
+    do_ssha_$action_ssha
+fi

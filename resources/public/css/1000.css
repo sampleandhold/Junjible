@@ -1,0 +1,125 @@
+/* CSS Resets */
+
+html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,address,cite,code,del,dfn,em,img,ins,q,small,strong,sub,sup,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{border:0;margin:0;padding:0}article,aside,figure,figure img,figcaption,hgroup,footer,header,nav,section,video,object{display:block}a img{border:0}figure{position:relative}figure img{width:100%}
+
+
+/* ==================================================================================================================== */
+/* ! The 1140px Grid V2 by Andy Taylor \ http://cssgrid.net \ http://www.twitter.com/andytlr \ http://www.andytlr.com   */
+/* ==================================================================================================================== */
+
+.container, header, footer, hgroup {
+padding-left: 20px;
+padding-right: 20px;
+}
+
+.row, nav, section {
+width: 100%;
+max-width: 1100px;
+min-width: 755px;
+margin: 0 auto;
+overflow: hidden;
+}
+
+.onecol, .twocol, .threecol, .fourcol, .fivecol, .sixcol, .sevencol, .eightcol, .ninecol, .tencol, .elevencol {
+margin-right: 3.8%;
+float: left;
+min-height: 1px;
+}
+
+.row .onecol, section .onecol, nav .onecol {
+width: 4.85%;
+}
+
+.row .twocol, section .twocol, nav .twocol {
+width: 13.45%;
+}
+
+.row .threecol, section .threecol, nav .threecol {
+width: 22.05%;
+}
+
+.row .fourcol, section .fourcol, nav .fourcol {
+width: 30.75%;
+}
+
+.row .fivecol, section .fivecol, nav .fivecol {
+width: 39.45%;
+}
+
+.row .sixcol, section .sixcol, nav .sixcol {
+width: 48%;
+}
+
+.row .sevencol, section .sevencol, nav .sevencol {
+width: 56.75%;
+}
+
+.row .eightcol, section .eightcol, nav .eightcol {
+width: 65.4%;
+}
+
+.row .ninecol, section .ninecol, nav .ninecol {
+width: 74.05%;
+}
+
+.row .tencol, section .tencol, nav .tencol {
+width: 82.7%;
+}
+
+.row .elevencol, section .elevencol, nav .elevencol {
+width: 91.35%;
+}
+
+.row .twelvecol, section .twelvecol, nav .twelvecol {
+width: 100%;
+float: left;
+}
+
+.last {
+margin-right: 0px;
+}
+
+img, object, embed {
+max-width: 100%;
+}
+
+img {
+	height: auto;
+}
+
+
+/* Smaller screens */
+
+@media only screen and (max-width: 999px) {
+
+}
+
+
+/* Mobile */
+
+@media handheld, only screen and (max-width: 880px) {
+
+	body {
+	font-size: 16px;
+	-webkit-text-size-adjust: none;
+	}
+	
+	.row, body, .container, header nav, section {
+	width: 100%;
+	min-width: 0;
+	margin-left: 0px;
+	margin-right: 0px;
+	padding-left: 0px;
+	padding-right: 0px;
+	}
+	
+	.row .onecol, .row .twocol, .row .threecol, .row .fourcol, .row .tabContainer .fourcol, .row .fivecol, .row .sixcol, .row .sevencol, .row .eightcol, .row .ninecol, .row .tencol, .row .elevencol, .row .twelvecol, section .onecol, section .twocol, section .threecol, section .fourcol, section .fivecol, section .sixcol, section .sevencol, section .eightcol, section .ninecol, section .tencol, section .elevencol, section .twelvecol, nav .onecol, nav .twocol, nav .threecol, nav .fourcol, nav .fivecol, nav .sixcol, nav .sevencol, nav .eightcol, nav .ninecol, nav .tencol, nav .elevencol, nav .twelvecol {
+	width: auto;
+	float: none;
+	margin-left: 0px;
+	margin-right: 0px;
+	padding-left: 20px;
+	padding-right: 20px;
+	}
+
+}

@@ -1,0 +1,62 @@
+#!/bin/sh
+# deploy
+# deploy a users world
+# usage: deploy username host user worldsafe
+
+PROGRAM=deploy
+CP_HOME=$(dirname $0)
+cd $CP_HOME/..
+CP_HOME=$(pwd -P)
+
+# quit the script if we encounter an error
+set -e
+
+username="$1"
+host="$2"
+user="$3"
+worldsafe="$4"
+
+if [ -z "$username" ]; then
+   echo "username not set"
+   exit 1
+fi
+if [ -z "$host" ]; then
+   echo "host not set"
+   exit 1
+fi
+if [ -z "$user" ]; then
+   echo "user not set"
+   exit 1
+fi
+if [ -z "$worldsafe" ]; then
+   echo "worldsafe not set"
+   exit 1
+fi
+
+ssha_functions=true
+. $CP_HOME/bin/ssha
+if ! do_ssha_check; then
+    echo "ERROR: ssh-agent not ready with identities loaded"
+    exit 1
+fi
+
+localball="$CP_HOME/users/$user/$worldsafe.tar.gz"
+remoteball="junjible-instances/users/$user/$worldsafe.tar.gz"
+
+if [ ! -e "$localball" ]; then
+    echo "$PROGRAM: cannot find archived world: $localball"
+    exit 1
+else
+  # make target directory
+  worlddir="$(dirname $remoteball)"
+  if ! ssh -n ${username}@${host} mkdir -p "$worlddir" > /dev/null 2>&1 ; then
+    echo "$PROGRAM: could not make parent directory $worlddir"
+    exit 1
+  else
+     # copy it there
+     scp -q "$localball" ${username}@${host}:"$remoteball" 
+     echo "$PROGRAM: deployed archived world: $remoteball"
+     rm "$localball"
+  fi
+fi
+

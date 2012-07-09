@@ -1,0 +1,402 @@
+(ns cavapanel.views.panel
+  (:require [cavapanel.views.common :as common]
+            [hiccup.page-helpers :as web]
+            [noir.validation :as valid]
+            [noir.session :as session]
+            [noir.response :as response]
+            [noir.cookies :as cookies]
+            [cavapanel.database :as db])
+  (:use [noir.core]
+        [redis.core :only [with-server]]
+        [hiccup.core]))
+
+(pre-route "/panel" {}
+           (with-server (db/redis-options)
+             (if-not (db/user?)
+               (do
+                 (session/flash-put! "/panel")
+                 (response/redirect "/#login")))))
+
+
+(defn tabInfo []
+  [:div#server-tab.tab.current.serverpane
+   [:ul.panel-sub-menu
+    [:li [:a {:href "/server/manage"} "server info"]]
+    [:li.last [:a {:href "/server/payments"} "my plan"]]
+    ]
+   [:div#serverpane-container.subpanel]
+   ]
+  )
+
+(defn tabWorlds []
+             [:div.tab.subpanel
+              [:div.threecol
+               [:h4 "WORLDS"]
+               [:a#new-world {:class "panelControl ", :rel "new-worlds"
+                    :href "#"} "new world"]
+                [:div.world-pane
+                 [:ul#world-list.list
+                  [:li "loading worlds..."]
+                  ]
+                 ]
+
+              ;; [:a {:class "panelControl worldctl", :rel "world-list"
+              ;;      :href "#"} "worlds"]
+
+              ;; [:a {:class "panelControl worldctl", :rel "save-worlds"
+              ;;      :href "#"} "save"]
+              ;; [:a {:class "panelControl worldctl", :rel "world-backups"
+              ;;      :href "#"} "backups"]
+               ;; DEBUGGING ONLY to be removed!
+               ;;[:input#editworld-button {:class "searchbutton", :type "button", :value "Go"}]                  
+               ]
+              [:div {:class "ninecol last panelReadout"}
+               [:div#world-list.worldscreen
+                [:div.world-details
+                 [:table {:align "left", :border "0", :cellspacing "0", :cellpadding "0"}
+                   [:tr
+                    [:td [:span.green "Name: "]][:td [:input {:type "text", :name "worldname", :value ""}]]
+                   ]
+                   [:tr
+                    [:td [:span.green "Welcome Message: "]][:td [:input {:type "text", :name "welcome", :value ""}]]
+                   ]
+                   [:tr
+                    [:td [:span.green "Private: "]][:td {:style "text-align:left"} [:input {:type "checkbox", :name "private", :value "private"}]]
+                   ]
+                   [:tr
+                    [:td ""][:td [:input#editworld-button {:class "searchbutton", :type "button", :value "Save", :val "0", :style "float:left;"}]]
+                   ]
+                   ]
+               
+                 ]
+         [:div.threecol.last
+;;[:p [:span.green "Whitelist: "] ""]
+;;[:form#whitelist-form
+;;[:div#whitelist-select
+;;                 [:ul#whitelist-select-list {:class "list"}
+;;                  [:li "Loading Groups"]
+;;                  ]
+;;]
+;;]
+]
+                ] ;; world-list
+               [:div#new-worlds.worldscreen {:style "display:none;"}
+                [:div#world-types
+                 [:img.worldpic {:src "/images/worldicons/gen_alpine.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_alpine2.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_default.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_default2.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_desert.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_desert2.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_dreamisland.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_dreamisland2.png"}]
+
+                 [:img.worldpic {:src "/images/worldicons/gen_floatingsnow.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_floatingsnow2.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_jurassic.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_jurassic2.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_megacave.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_megacave2.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_nether.png"}]
+                 [:img.worldpic {:src "/images/worldicons/gen_nether2.png"}]
+                 ]
+                [:div.world-details
+                 [:h3 "new world"]
+                 "select world type from left" [:br]
+                 [:form#world-selection {:action "", :method "POST"}
+                  [:table {:align "left", :border "0", :cellspacing "0", :cellpadding "0"}
+                   [:tr
+                    [:td "seed:"]
+                    [:td [:input {:type "text", :name "worldseed",
+                                  :maxlength "60", :value ""}]]
+                    [:td.left-align]
+                    ]
+                   [:tr
+                    [:td "name:"]
+                    [:td [:input {:type "text", :name "worldname",
+                                  :maxlength "60", :value ""}]]
+                    [:td.left-align]
+                    ]
+                   [:tr
+                    [:td {:colspan "2", :align "left"}
+                     [:input#create-button {:type "submit", :name "create world"}]]
+                    ;; [:td.left-align]
+                    ]
+                   ]
+                  ] ;; form
+                 ]
+                ] ;; new-worlds
+               [:div#world-backups.worldscreen {:style "display:none;"}
+                [:div.backups-pane
+                 [:ul.list
+                  [:li "Backup 1"]
+                  [:li "Backup 2"]
+                  [:li "Backup 3"]
+                  [:li "Backup 4"]
+                  [:li "Backup 5"]
+                  [:li "Backup 6"]
+                  [:li "Backup 7"]
+                  [:li "Backup 8"]
+                  [:li "Backup 9"]
+                  [:li "Backup 10"]
+                  [:li "Backup 11"]
+                  [:li "Backup 12"]
+                  [:li "Backup 13"]
+                  [:li "Backup 14"]
+                  [:li "Backup 15"]
+                  ]
+                 ]
+                [:div.world-details
+                 [:h3 "Backup Details"]
+                 [:p [:span.green "Seed:"] "Nematte!"]
+                 [:p [:span.green "Type:"] "Swampland"]
+                 [:p [:span.green "Created::"] "11 / 21 / 2011 24:32:16"]
+                 [:p [:span.green "Size:"] "13.3 MiB"]
+                 ]
+                ] ;; world-backups
+               ]
+              (web/include-js "/js/worlds.js")
+              ] ;; tab
+  )
+
+(defn tabGroups []
+             [:div.tab.subpanel
+              [:div {:class "twelvecol"}
+               [:h4 "GROUPS"]
+               [:div {:class "fourcol groupspane"}
+                [:h3 "groups"]
+                [:div#grouplist
+                 [:ul.list
+                  [:li.initial "loading groups..."]
+                  ]
+                 ]
+                [:form.searchform {:onsubmit "return false"}
+                 [:input#addgroup-field {:class "searchfield short", :type "text", :value "add a group...",
+                                         :onfocus "if (this.value == 'add a group...') {this.value = '';}",
+                                         :onblur "if (this.value == '') {this.value = 'add a group...';}" }]
+                 [:input#addgroup-button {:class "searchbutton", :type "button", :value "Go"}]
+                 ]
+                ]
+               [:div {:class "fourcol subpanel groupspane"}
+                [:h3 "members"]
+                [:div#memberlist
+                 [:ul.list
+                  [:li.initial "loading members..."]
+                  ]
+                 ]
+                [:form.searchform {:onsubmit "return false"}
+                 [:input#adduser-field {:class "searchfield short", :type "text",
+                                        :value "add a user to this group...",
+                                        :onfocus "if (this.value == 'add a user to this group...') {this.value = '';}",
+                                        :onblur "if (this.value == '') {this.value = 'add a user to this group...';}" }]
+                 [:input#adduser-button {:class "searchbutton", :type "button", :value "Go"}]
+                 ]
+                ]
+               [:div {:class "fourcol subpanel groupspane"}
+                [:h3 "permissions"
+                 [:span.togglePerms.on "all on  |"]
+		  [:span.togglePerms.off "  all off"]
+	       ]
+                [:div#permissionslist
+                 [:ul.list
+                  [:li.initial "loading permissions..."]
+                  ]
+                 ]
+		  [:div#permInfo]
+                ]
+               ]
+              (web/include-js "/js/groups.js")
+              ] ;; tab
+  )
+
+(defn tabPlugins []
+             [:div.tab.subpanel
+              [:div.twocol
+               [:h4 "PLUGINS"]
+               [:div.plugcats-pane
+                [:ul.list.plugList
+                 [:li "My Plugins"]
+                 [:li "All Plugins"]
+                 ]
+                ]
+               ]
+              [:div {:class "ninecol last panelReadout"}
+               [:h3.cat-browser  "Category Name"]
+[:span#plug-search
+[:form.searchform
+	[:input {:type "text", :onblur "if (this.value == '') {this.value = 'Search Plugins...';}", :onfocus "if (this.value == 'Search Plugins...') {this.value = '';}", :value "Search Plugins...", :class "searchfield", :id "plugin-search-field"}]
+	[:input {:type "button", :value "Go", :class "searchbutton", :id "plugin-search-button"}]
+]
+]
+               [:div#pluginfo
+                [:div#plug-container]
+
+                ]
+               ]
+              ] ;; tab
+  )
+
+(defn tabSettings []
+              [:div.tab.subpanel
+               [:div.sixcol
+                [:h4 "SETTINGS"]
+                [:p (str "User Account : " (db/user?)) [:br] [:br]
+                 [:div#user-msg]
+                 [:form {:onsubmit "return false"}
+                  [:table {:align "left", :border "0", :cellspacing "0", :cellpadding "3"}
+                   [:tr
+                    [:td "Current Password:"]
+                    [:td [:input {:type "password", :name "curpass",
+                                  :maxlength "30", :value ""}]]
+                    [:td]
+                    ]
+                   [:tr
+                    [:td "New Password:"]
+                    [:td [:input {:type "password", :name "newpass",
+                                  :maxlength "30", :value ""}]]
+                    [:td]
+                    ]
+                   [:tr
+                    [:td "Re-enter password:"]
+                    [:td [:input {:type "password", :name "newpass2",
+                                  :maxlength "30", :value ""}]]
+                    [:td]
+                    ]
+                   [:tr
+                    [:td "Email:"]
+                    [:td [:input {:type "text", :name "email",
+                                  :maxlength "40", :value "my email here"}]]
+                    [:td]
+                    ]
+                   [:tr
+                    [:td "Minecraft Account:"]
+                    [:td [:input {:type "text", :name "minecraft",
+                                  :maxlength "30", :value ""}]]
+                    [:td]
+                    ]
+                   [:tr
+                    [:td "Delete Account:"]
+                    [:td [:input {:type "checkbox", :name "delete-account",
+                                  :value ""}]]
+                    [:td]
+                    ]
+                   [:tr
+                    [:td {:colspan "2", :align "right"}
+                     ;; [:input#subedit {:type "hidden", :name "subedit", :value "1"}]
+                     [:input#user-submit {:type "button", :value "Edit Account"}]
+                     ]
+                    ]
+                   [:tr
+                    [:td {:colspan "2", :align "left"}]
+                    ]
+                   ]
+                  ] ;; form
+                 ]
+                ]
+               ;; (web/include-js "/js/user.js")
+               ] ;; tab
+  )
+
+(defpage "/panel" []
+  (with-server (db/redis-options)
+    (let [user (db/user?)]
+      (if (nil? user)
+        (do
+          (println "hey, we got a nil user - pre-route failed.")
+          (response/redirect "/"))
+        (common/layout
+         "panel"
+         (str
+          (common/layout-header)
+          (html
+           [:div#thePanel]
+           [:div#panelNav {:class "container gradient"}
+            [:div#panelExplanation.row
+             [:div {:class "twelvecol last gradient"}
+              [:span [:mark "submenu"]]
+              ]
+             ]
+            [:div.row
+             [:div {:class "twelvecol last"}
+              [:ul#tabNav.pan
+               [:li.current [:a#server-tab.gradient {:href "#", :title "server"}
+                             (web/image "/images/info.png" "server")]]
+               [:li [:a#worlds-tab.gradient {:href "#", :title "worlds"}
+                     (web/image "/images/world.png" "World")]]
+               [:li [:a#groups-tab.gradient {:href "#", :title "groups"}
+                     (web/image "/images/groups.png" "Groups")]]
+               [:li [:a#plugins-tab.gradient {:href "#", :title "plugins"}
+                     (web/image "/images/plugins.png" "Plugins")]]
+               [:li [:a#settings-tab.gradient {:href "#", :title "settings"}
+                     (web/image "/images/settings.png" "Settings")]]
+               ]
+              ]
+             ]
+            ]
+           [:div#panelContainer.container
+            [:div.row
+             [:div#tabContainer {:class "twelvecol last",
+                                 :ontouchstart "touchStart(event,'tabContainer');",
+                                 :ontouchend "touchEnd(event);",
+                                 :ontouchmove "touchMove(event);",
+                                 :ontouchcancel "touchCancel(event);"}
+              (tabInfo)
+              (tabWorlds)
+              (tabGroups)
+              (tabPlugins)
+              (tabSettings)
+              ]
+             ]
+            ] ;; panelContainer
+           [:div#aboutSection {:class "container gradient"}
+            [:section
+             [:div#notes {:class "twelvecol last", :style "display:none;"}
+              [:div#contactInfo.gradient
+               [:div#contactRight
+                [:p#notification
+                 [:img {:src "/images/loading-gear.gif"}]
+                 [:em#notify-text "Rebooting server..."]
+                 ]
+                ]
+               ]
+              ]
+             ]
+            ];; aboutSection
+           )
+          (common/layout-footer)
+          ))))))
+
+;; example just to test flash
+
+(pre-route "/preferences" {}
+           (with-server (db/redis-options)
+             (if-not (db/user?)
+               (do
+                 (session/flash-put! "/preferences")
+                 (response/redirect "/#login")))))
+
+(defpage "/preferences" []
+  (with-server (db/redis-options)
+    (let [user (db/user?)]
+      (if (nil? user)
+        (do
+          (println "hey, we got a nil user - pre-route failed.")
+          (response/redirect "/"))
+        (common/layout
+         "intro"
+         (str
+          (common/layout-header)
+          (html ;; about
+           [:hgroup
+            [:section
+             [:h3 "Preferences"]
+             "custom preferences for " [:b user]
+             [:ul
+              [:li [:a {:href "/panel"} "Panel"]]
+              ]
+             ]
+            ]
+           )
+          (common/layout-footer)
+          ))))))
+

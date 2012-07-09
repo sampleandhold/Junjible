@@ -1,0 +1,30 @@
+#!/bin/sh
+# cavapanel-backup
+# will backup the production redis database
+
+set -e
+
+cwd="$(pwd -P)"
+dir="$(dirname $0)"
+cd "$dir"
+dir="$(pwd -P)"
+program="$(basename $0)"
+cd "$dir/../../.."
+MAAS="$(pwd -P)"
+cd $cwd
+
+datadir=$HOME/data
+mkdir -p $datadir
+cd $datadir
+
+daily=cavapanel-$(date +%Y-%m%d).xml
+hourly=cavapanel-today-$(date +%H).xml
+now=cavapanel.xml
+
+# NOTE this will use the settings in ~/.redis2xml like
+# the database number and password
+$MAAS/clojure/redis2xml-v2/bin/redis2xml -x $now
+
+cp $now $hourly
+cp $hourly $daily
+

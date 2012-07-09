@@ -1,0 +1,228 @@
+#!/bin/sh
+# posix.funcs
+# generic POSIX functions for scripts
+
+# expect the user will override these
+
+if [ -z "$program" ]; then
+  program="posix.funcs"
+fi
+
+if [ -z "$logfile" ]; then
+  logfile=/dev/null
+fi
+
+if [ -z "$env" ]; then
+  env=environment
+fi
+
+if [ -z "$STAMPS" ]; then
+  STAMPS="/tmp/$USER/$program/stamps"
+fi
+
+# let the caller create the stamps dir
+# if [ ! -d "$STAMPS" ]; then
+#   mkdir -p "$STAMPS"
+# fi
+
+# -- generic --
+
+# stdout
+mecho() {
+  echo "$@"
+}
+
+# stderr
+vecho() {
+  [ -z "$verbose" ] || echo >&2 "$@"
+}
+
+log() {
+  echo "$*" >> "$logfile"
+  vecho "$*"
+}
+
+msg() {
+  echo "$*" >> "$logfile"
+  mecho "$*"
+}
+
+lognote() {
+  echo "# $*" >> "$logfile"
+  vecho "# $*"
+}
+
+vcmd() {
+  vecho $*
+  $*
+}
+
+logcmd() {
+  echo "$*" >> "$logfile"
+  vcmd $*
+}
+
+err() {
+  echo >&2 "E: $*" 
+}
+
+logerr() {
+  echo "E: $*" >> "$logfile"
+  err "$*"
+}
+
+warn() {
+  echo >&2 "W: $*"
+}
+
+logwarn() {
+  echo "# W: $*" >> "$logfile"
+  warn "$*"
+}
+
+update_env() {
+  local v
+  local val
+
+  for v in $*; do
+    val="$(eval echo \$$v)"
+    lognote "updating environment: $v=$val"  
+    if [ -e "$env" ]; then
+      mv "$env" "$env.old"
+      echo "#${program} updated environment on `date`" > "$env"
+      # ignore egrep error code
+      egrep -v "(^#${program}|^${v}=)" "$env.old" >> "$env" || true
+    else
+      echo "#${program} created environment on `date`" >> "$env"
+    fi
+    echo "$v=\"$val\"" >> "$env"
+    rm -f "$env.old"
+  done
+}
+
+startswith() {
+  start=$1
+  str=$2
+  if [ "${str#$start}" = "$str" ]; then
+    return 1
+  fi
+  return 0
+}
+
+verify_vars() {
+  for v in $*; do
+    val=$(eval echo \$$v)
+    if [ -z "$val" ]; then
+      err "Please set the environment variable $v"
+      exit 1
+    fi
+  done
+}
+
+preaction_debug() {
+  log " "
+  log "===== Starting $program at `date` ====="
+  log "debug=$debug"
+  log "verbose=$verbose"
+  log "force=$force"
+  log "action=$action"
+  for v in $*; do
+    val=$(eval echo \$$v)
+    log "$v=$val"
+  done
+  log " "
+  return 0
+}
+
+fun_start() {
+  lognote "--- $* ---"
+  [ -z "$force" ] || rm -f "$STAMPS/$1"
+}
+
+fun_needed() {
+  local rv=0
+  if [ -e "$STAMPS/$1" ]; then
+    lognote "--- $1 already done ---"
+    rv=1
+  fi
+  return $rv
+}
+
+fun_done() {
+  lognote "--- $1 completed ---"
+  touch "$STAMPS/$1"
+}
+
+# NOTE: Certain operating systems (bash) already set OSTYPE
+# we must not make any assumptions about it being valid
+# OSTYPE=""
+if [ -z "$OS" ]; then
+  # What platform are we on?
+  case "`uname -m`" in
+    i[36]86) ARCH=i686    ;; # NORMALLY i686 # 32-bit
+    x86_64)  ARCH=x86_64  ;; # 64-bit
+    ia64)    ARCH=ia64    ;; # 64-bit
+    amd64)   ARCH=amd64   ;; # 64-bit
+    *)       ARCH=unknown ;;
+  esac
+  case "`uname -s`" in
+    # Force 64-bit Windows users to use 32-bit
+    #CYGWIN*-WOW64) OS=cygwin; ARCH=x86_64 ;;
+    CYGWIN*)       OS=cygwin; ARCH=i686 ;;
+    Darwin)        OS=darwin ;;
+    SunOS)         OS=solaris ;;
+    [Ll]inux*)     OS=linux   
+          if [ "$ARCH" = "x86_64" ]; then
+            ARCH=amd64      # special for Linux 64-bit
+          fi
+          ;;
+    *) OS=unknown ;;
+  esac
+fi
+
+readlink_canonicalize () {
+  local p="$1"
+  local f=""
+  local c=""
+  local i=0
+  local max=100
+  if [ "$OS" != "darwin" ]; then
+    echo $(readlink --canonicalize "$p")
+  else
+    if [ "$p" = "." ]; then
+        # special case to avoid dirname=basename=.
+      p="$(pwd -P)"
+    fi
+    f=$(basename "$p")
+    p=$(dirname "$p")
+    cd "$p"
+    p="$(pwd -P)"
+    while [ "$p" != "/" ] && [ $i -lt $max ]; do
+      if [ -L "$f" ]; then
+        p=$(readlink "$f")
+        f=$(basename "$p")
+        p=$(dirname "$p")
+        cd "$p"
+        p="$(pwd -P)"
+      else
+        if [ -z "$c" ]; then
+          c="$f"
+        else
+          c="$f/$c"
+        fi
+        f=$(basename "$p")
+        p=$(dirname "$p")
+        cd "$p"
+        p="$(pwd -P)"
+      fi
+      i=$((i + 1))
+    done
+    if [ -z "$c" ]; then
+      c="$f"
+    else
+      c="$f/$c"
+    fi
+    echo "${p}${c}"
+  fi
+  return 0
+}

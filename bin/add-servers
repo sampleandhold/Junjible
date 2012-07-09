@@ -1,0 +1,16 @@
+#!/bin/sh
+# add-servers
+# add server configuration
+
+dir="$(dirname $0)"
+cavapanel="$dir/cavapanel"
+verbose=$1
+if [ -z "$verbose" ]; then
+    verbose=""
+else
+    verbose="-v"
+fi
+
+set -x
+echo "Add the servers..."
+$cavapanel run $verbose -b UPDATE-SERVER beta host beta.junjible.com max-instances 40 num-instances 0

@@ -1,0 +1,91 @@
+QUnit based unit tests
+
+Please see ticket #120
+
+For documentation on upstream testing please see:
+- http://docs.jquery.com/Qunit
+- https://github.com/jquery/qunit
+- http://benalman.com/talks/unit-testing-qunit.html
+
+Each module has a URI like
+  /unit-tests/TEST
+with a corresponding JavaScript file in
+  /unit-tests/js/TEST.js
+
+
+
+
+The URI
+  /unit-tests/all
+Will run all the tests.  The resulting HTML should have
+results like this:
+
+<p id="qunit-testresult" class="result">
+Tests completed in 25 milliseconds.
+<br>
+<span class="passed">4</span>
+tests of
+<span class="total">4</span>
+passed,
+<span class="failed">0</span>
+failed.
+</p>
+
+
+ECMAScript function logResults()
+	   - Will run 2 seconds after the page completely loads.
+
+Test Name & Details
+------------------
+
+Client Login - Attempts to login and passes if the returned page contains
+       	       'logout'
+
+Signup Test - This is a stub, but the actual test request is made
+
+User Data - Will pass if /server/get-user item data.user is not null
+
+User E-mail - Will pass if /server/get-user item data.email is not null
+
+User Minecraft - Will pass if /server/get-user item data.minecraft is not null
+
+User Name - Will pass if /server/get-user item data.name is not null
+
+User Change Password - Sends valid POST request to change password. Will pass
+     	    	       if /server/get-user item data.saved is true
+
+Add Groups - Send valid POST request to Add a group. Will pass if
+    	     /server/get-user item data.success is true
+
+Get Groups *wildcard* - Will pass if /server/get-user *item-here*
+    	   	      	values are not null
+
+Add Group Member - Will POST a valid Add Group Member request. Will pass if 
+    	  	   /server/save-groups item data.success is true.
+
+Change User Permissions - WIll POST a valid Permissions Change request. Will
+       	    		  pass if /server/save-permissions item data.success
+			  is true.
+
+User Has Permissions for *wildcard* - Will pass if /server/get-permissions
+     	 	     	 	      *item-here* values are not null.
+
+Delete Group Member - Will POST a valid Save Groups request. Will pass if
+       	     	      /server/save-groups item data.success is true.
+
+Add User Plugins - Will POST a valid Save User Plugins request. Will pass if
+    	 	   /server/save-userplugins item data.success is true.
+
+Plugin Check *wildcard* - Will pass if /server/get-plugins *item-here* values
+       	     		  are not null.
+
+Delete All Plugins - This is a stub that makes a valid /server/save-userplugins
+       	   	     POST request.
+
+Create World - Will POST a valid Save World request. Will pass if
+       	       /server/save-worlds item data.success is true.
+
+Delete World - Will POST a valid Save World request. Will pass if
+       	       /server/save-worlds item data.success is true.
+
+Admin tests still to come

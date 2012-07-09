@@ -1,0 +1,255 @@
+@charset "utf-8";
+/* CSS Document */
+
+/*RESET START*/
+
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { 
+	margin:0;
+	padding:0;
+}
+table {
+	border-collapse:collapse;
+	border-spacing:0;
+}
+fieldset,img { 
+	border:0;
+}
+address,caption,cite,code,dfn,em,strong,th,var {
+	font-style:normal;
+	font-weight:normal;
+}
+ol,ul {
+	list-style:none;
+}
+caption,th {
+	text-align:left;
+}
+h1,h2,h3,h4,h5,h6 {
+	font-size:100%;
+	font-weight:normal;
+}
+q:before,q:after {
+	content:'';
+}
+abbr,acronym { border:0;
+}
+
+/*RESET END*/
+
+body {margin:0px auto; padding: 0px; background-color:#303030; font-family: Helvetica Neue,Arial,Helvetica,'Liberation Sans',FreeSans,sans-serif; color: #303030;text-shadow: 1px 1px 0 #ccc}
+
+a:link {border: 0px; text-decoration: none;}
+
+.bar {position: fixed; z-index: 10000; width: 100%;top:0px; height: 142px;}
+
+.logo {float: left}
+
+.nav {float: right; width:100%; padding:8px 10px 14px; background:#cecece;}
+
+.wrapper { position: absolute; width: 960px; left: 50%; margin-left: -480px; }
+
+.intro { height: 500px; z-index: 1000; margin-top: 180px; }
+.intro_cta {background: url(../images/CTA.png) top left no-repeat; width: 984px; height: 359px; }
+
+a:link.b_cta { background-color:transparent; background:url(../images/downarrow.png); position: absolute; margin: 434px 0px 0px 430px; display: block; height: 53px; width: 90px;}
+
+.work { margin-top: 430px; height: 740px; }
+
+.contact { margin-top: 790px; margin-bottom:80px;height: 450px; background:url(../images/white.png);padding:10px; box-shadow: 0 0 4px #777 inset}
+
+.contact-form { float: left; width: 400px; margin-left: 70px; }
+
+.contact-services { float: left; margin-left:20px; width: 280px; color: #303030; line-height: 25px; font-size: 15px; }
+
+.contact-follow { float: left; }
+
+.follow-links { margin-top: 15px;}
+
+.a_top {}
+.a_contact {}
+.a_port {height:134px;}
+#login-form{display:inline;}
+.form-submit { display:block; margin-top:15px; width:72px; height:34px; background:url(../images/b_send.png) no-repeat top left; border:none; cursor:pointer; }
+.text-field { width:250px; height:20px; padding:10px 0px 10px 12px; margin-bottom:5px; font-size:12px; color:#4B4B4B; border:1px solid #CCCCCC; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) inset;}
+.text-area { width:250px; height:70px; padding:10px 0px 0px 12px; font-family:verdana, arial; font-size:12px; color:#4B4B4B; border:1px solid #CCCCCC; }
+
+h2 { font-family: sans-serif; color: #4B4B4B; font-size: 14px;}
+h1 { font-family: sans-serif; color: #4B4B4B; font-size: 22px;font-weight:bold;}
+input[type="button"].login, input[type="submit"].login{color: #4B4B4B; font-weight:bold; font-size: 14px; background: url(../images/front-button.png) no-repeat;height:56px;border:0;width:130px;cursor:pointer;}
+span.or{padding:0;margin:0;height:56px;width:56px;}
+span.or img{position:relative;top:10px;margin-left:6px;}
+ul.things li {margin:10px 5px 5px 10px;text-indent:20px;}
+.login-holder{float:right;margin-right:10px;}
+
+.work, .contact {display:none;}
+/*
+ * jQuery Nivo Slider v2.5.2
+ * http://nivo.dev7studios.com
+ *
+ * Copyright 2011, Gilbert Pellegrom
+ * Free to use and abuse under the MIT license.
+ * http://www.opensource.org/licenses/mit-license.php
+ * 
+ * March 2010
+ */
+ 
+ 
+/* The Nivo Slider styles */
+.nivoSlider {
+	position:relative;
+}
+.nivoSlider img {
+	position:absolute;
+	top:0px;
+	left:0px;
+}
+/* If an image is wrapped in a link */
+.nivoSlider a.nivo-imageLink {
+	position:absolute;
+	top:0px;
+	left:0px;
+	width:100%;
+	height:100%;
+	border:0;
+	padding:0;
+	margin:0;
+	z-index:6;
+	display:none;
+}
+/* The slices and boxes in the Slider */
+.nivo-slice {
+	display:block;
+	position:absolute;
+	z-index:5;
+	height:100%;
+}
+.nivo-box {
+	display:block;
+	position:absolute;
+	z-index:5;
+}
+/* Caption styles */
+.nivo-caption {
+	position:absolute;
+	right:0px;
+	top:0px;
+	background:url(../images/captbg.png);
+	color:#4B4B4B;
+	opacity:0.8; /* Overridden by captionOpacity setting */
+	width:500px;
+  height:540px;
+	z-index:8;
+}
+.nivo-caption p {
+	padding:5px;
+	margin:10px 10px 10px 150px;
+}
+.nivo-caption a {
+	display:inline !important;
+}
+.nivo-html-caption {
+    display:none;
+}
+/* Direction nav styles (e.g. Next & Prev) */
+.nivo-directionNav a {
+	position:absolute;
+	top:45%;
+	z-index:9;
+	cursor:pointer;
+}
+.nivo-prevNav {
+	left:0px;
+}
+.nivo-nextNav {
+	right:0px;
+}
+/* Control nav styles (e.g. 1,2,3...) */
+.nivo-controlNav a {
+	position:relative;
+	z-index:9;
+	cursor:pointer;
+}
+.nivo-controlNav a.active {
+	font-weight:bold;
+}
+/*============================*/
+/*=== Custom Slider Styles ===*/
+/*============================*/
+#slider-wrapper {
+    background:url(../images/slider.png) no-repeat;
+    width:998px;
+    height:392px;
+    margin:0 auto;
+    padding-top:74px;
+    margin-top:50px;
+}
+
+#slider {
+	position:relative;
+    width:940px;
+    height:540px;
+	background:url(../images/loading.gif) no-repeat 50% 50%;
+}
+#slider img {
+	position:absolute;
+	top:0px;
+	left:0px;
+	display:none;
+}
+#slider a {
+	border:0;
+	display:block;
+}
+
+.nivo-controlNav {
+	position:absolute;
+	left:0px;
+	bottom:-42px;
+}
+.nivo-controlNav a {
+	display:block;
+	width:15px;
+	height:15px;
+	background:url(../images/radio_off.png) no-repeat;
+	text-indent:-9999px;
+	border:0;
+	margin-right:10px;
+	float:left;
+}
+.nivo-controlNav a.active {
+	background:url(/images/radio_on.png) no-repeat;
+}
+
+.nivo-directionNav a {
+	display:block;
+	width:30px;
+	height:30px;
+	background:url(../images/arrows.png) no-repeat;
+	text-indent:-9999px;
+	border:0;
+}
+a.nivo-nextNav {
+	background-position:-30px 0;
+	right:15px;
+}
+a.nivo-prevNav {
+	left:15px;
+}
+
+.nivo-caption a { 
+    text-decoration:none;
+}
+
+/*====================*/
+/*=== Other Styles ===*/
+/*====================*/
+.clear {
+	clear:both;
+}
+li#facebook a {
+height: 46px;
+width: 52px;
+list-style: none;
+background: transparent;
+text-indent: -9999px;
+}

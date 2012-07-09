@@ -1,0 +1,161 @@
+#!/bin/sh
+# promote-server prod-dir
+# promote latest Junjible-Server.zip to production Minecraft servers
+
+PROGRAM=cavapanel
+CP_HOME=$(dirname $0)
+cd $CP_HOME/..
+CP_HOME=$(pwd -P)
+
+# quit the script if we encounter an error
+set -e
+
+# use netcat6 if available, else generic netcat (netcat-openbsd)
+if [ -x /bin/nc6 ]; then
+  nc=/bin/nc6
+else
+  nc=nc
+fi
+
+host_ssh() {
+  local host=$1
+  local timeout=5
+  local i n maxtries=10
+  i=0;
+  while [ $i -lt $maxtries ]; do
+    if $nc -z -w$timeout $host 22; then
+      return 0
+    fi
+    i=$((i + 1))
+  done
+  return 1
+}
+
+ssha_functions=true
+. $CP_HOME/bin/ssha
+if ! do_ssha_check; then
+    echo "ERROR: ssh-agent not ready with identities loaded"
+    exit 1
+fi
+
+if [ "$#" -ne 1 ]; then
+    echo "usage: promote prod-dir"
+    exit 1
+fi
+proddir="$1"
+
+tarball=Junjible-Server.tar.gz
+if [ -z "$JUNJIBLE_SERVER" ]; then
+  JUNJIBLE_SERVER=/var/lib/jenkins/.jenkins/jobs/Junjible-Server/workspace/Junjible-Server.tar.gz
+else
+  if [ "$(basename $JUNJIBLE_SERVER)" != "$tarball" ]; then
+    echo "ERROR: JUNJIBLE_SERVER does not point to a tarball: $tarball"
+    exit 1
+  fi
+fi
+
+if [ ! -e "$JUNJIBLE_SERVER" ]; then
+  echo "ERROR: tarball not present at JUNJIBLE_SERVER=$JUNJIBLE_SERVER"
+  exit 1
+fi
+
+if [ -z "$DATABASE" ]; then
+  DATABASE=$(awk -F= '/^database=/ { print $2;}' "$HOME/.$PROGRAM")
+  jproto=http
+  jhost=$(awk -F= '/^host=/ { print $2;}' "$HOME/.$PROGRAM")
+  jport=$(awk -F= '/^port=/ { print $2;}' "$HOME/.$PROGRAM")
+  if [ "$jport" = "80" ]; then
+      jport=""
+  else
+      jport=":$jport"
+  fi
+  baseurl="${jproto}://${jhost}${jport}"
+  uri="/stats/update-instance"
+  if [ -z "$DATABASE" ] || [ "$DATABASE" = "1" ]; then
+    DATABASE=1
+    url=${baseurl}${uri}
+    echo "using development database $DATABASE (stats $url )"
+  else
+    url="https://junjible.com${uri}"
+    echo "using production database $DATABASE (stats $url )"
+  fi
+else
+  echo "using database $DATABASE"
+fi
+
+if [ -n "$VERBOSE" ]; then
+  echo "verbose mode is on"
+  VERBOSE=-v
+fi
+
+
+# is there a current prod-dir? if not we cannot continue
+script="$proddir/$PROGRAM/bin/$PROGRAM"
+if [ ! -x "$script" ]; then
+  echo "ERROR: production script not present: $script"
+  exit 1
+fi
+
+# get list of servers
+servers="$($script run $VERBOSE --database $DATABASE -b GET-SERVERS)"
+if [ -z "$servers" ]; then
+  echo "no servers defined, nowhere to push updates"
+  exit 0
+fi
+
+echo "will update these servers: $servers"
+
+# global lock on server actions
+echo "invoke global lock on servers..."
+$script run $VERBOSE --database $DATABASE -b SERVERS-LOCKED
+
+# need to push server updates
+for server in $servers; do
+  username="$($script run $VERBOSE --database $DATABASE -b HGET server:$server username)"
+  if [ -z "$username" ]; then
+    username=junjible
+  fi
+  host="$($script run $VERBOSE --database $DATABASE -b HGET server:$server host)"
+  if [ -z "$host" ]; then
+    echo "WARNING host not defined for server:$server"
+  else
+    if [ ${#host} -gt 50 ]; then
+      echo "WARNING: host name too long, this is probably an error: $host"
+    else
+      ip="$(dig +short $host)"
+      if [ -z "$ip" ]; then
+	echo "WARNING cannot find ip for server host = $server $host"
+      else
+	if ! host_ssh $host ; then
+	  echo "WARNING host is NOT responding = $server $host"
+	else
+	  echo "push $tarball to $username@$host ..."
+	  # ssh $username@$host uptime
+	  # echo scp -q $JUNJIBLE_SERVER $username@${host}:
+	  scp -q $JUNJIBLE_SERVER $username@${host}:
+	  # echo ssh -n -q $username@$host 'rm -r Junjible-Server; tar xf Junjible-Server.tar.gz ; chmod +x Junjible-Server/bin/*'
+	  ssh -n -q $username@$host 'rm -r Junjible-Server; tar xf Junjible-Server.tar.gz ; chmod +x Junjible-Server/bin/*'
+	  echo "  update configuration for $username@$host ..."
+	  hostprop=$CP_HOME/logs/host.properties
+	  echo "# host.properties" > $hostprop
+	  echo "# created on $(date)" >> $hostprop
+	  echo "# updated with promote-server by $USER on $(hostname)" >> $hostprop
+	  echo "server=$server" >> $hostprop
+	  echo "host=$host" >> $hostprop
+	  echo "url=$url" >> $hostprop
+	  echo "token=salt-$(date +%s)" >> $hostprop
+	  scp -q $hostprop $username@${host}:Junjible-Server/conf/
+	fi
+      fi
+    fi
+  fi
+done
+
+#echo "DEBUG sleep for 60"
+#sleep 60
+
+# global unlock and flag all for changes
+echo "remove global lock on servers and notify users of changes..."
+$script run $VERBOSE --database $DATABASE -b SERVERS-UNLOCKED
+
+exit 0

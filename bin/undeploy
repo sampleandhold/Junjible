@@ -1,0 +1,63 @@
+#!/bin/sh
+# undeploy
+# undeploy a users worlds
+# usage: undeploy username host user worldsafe0 worldsafe1...
+
+PROGRAM=undeploy
+CP_HOME=$(dirname $0)
+cd $CP_HOME/..
+CP_HOME=$(pwd -P)
+
+# quit the script if we encounter an error
+set -e
+
+username="$1"
+host="$2"
+user="$3"
+worldsafe="$4"
+
+if [ -z "$username" ]; then
+   echo "username not set"
+   exit 1
+fi
+if [ -z "$host" ]; then
+   echo "host not set"
+   exit 1
+fi
+if [ -z "$user" ]; then
+   echo "user not set"
+   exit 1
+fi
+if [ -z "$worldsafe" ]; then
+   echo "worldsafe not set"
+   exit 1
+fi
+
+ssha_functions=true
+. $CP_HOME/bin/ssha
+if ! do_ssha_check; then
+    echo "ERROR: ssh-agent not ready with identities loaded"
+    exit 1
+fi
+
+localball="$CP_HOME/users/$user/$worldsafe.tar.gz"
+remoteball="junjible-instances/users/$user/$worldsafe.tar.gz"
+
+# make sure the local users directory exists
+mkdir -p $(dirname $localball)
+
+# does the world exist as an archive?
+if ssh -n ${username}@${host} ls "$remoteball" > /dev/null 2>&1 ; then
+   # copy it back here
+   scp -q ${username}@${host}:"$remoteball" "$localball"
+   echo "$PROGRAM: undeployed archived world: $remoteball"
+   ssh -n ${username}@${host} rm "$remoteball"
+else
+   echo "$PROGRAM: remote archived world does not exist"
+   if [ -e "$localball" ]; then
+      echo "$PROGRAM: already undeployed: $localball"
+   else
+      echo "$PROGRAM: cannot find archived world"
+      exit 1
+   fi
+fi

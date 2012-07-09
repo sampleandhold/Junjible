@@ -1,0 +1,31 @@
+#!/bin/sh
+# package
+# make a project distributable
+
+PROGRAM=cavapanel
+CP_HOME=$(dirname $0)
+cd $CP_HOME/..
+CP_HOME=$(pwd -P)
+
+# quit the script if we encounter an error
+set -e
+
+if [ ! -d "../$PROGRAM" ]; then
+    echo "ERROR: this script expects to be in a directory named $PROGRAM/bin"
+    exit 1
+fi
+
+jarfile="$(ls -1 | grep 'jar$')" || true # do NOT exit on failure to find a jar
+if [ -z "$jarfile" ] || [ ! -e "$jarfile" ]; then
+    echo "ERROR: there is no jarfile, please run $PROGRAM rejar"
+    exit 1
+fi
+
+cd ..
+tarfile=$PROGRAM.tar.gz
+rm -f $tarfile
+tar zcf $tarfile --exclude='*~' ./$PROGRAM/bin ./$PROGRAM/lib ./$PROGRAM/awstats ./$PROGRAM/$jarfile
+
+echo "created $tarfile"
+
+exit 0

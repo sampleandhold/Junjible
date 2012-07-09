@@ -1,0 +1,24 @@
+#!/bin/sh
+# add-users
+# add fake users
+
+dir="$(dirname $0)"
+cavapanel="$dir/cavapanel"
+verbose=$1
+if [ -z "$verbose" ]; then
+    verbose=""
+else
+    verbose="-v"
+fi
+
+# users="fred betty olga naida theodore blythe todd abigail danielle zane justina ethan kato howard atkins baldwin gomez hansen mejia harrison kane curry lindsay"
+# ONLY add one fake user
+users="fred"
+
+for user in $users; do
+  password=${user}123
+  cmd="$cavapanel run $verbose -b UPDATE-USER $user minecraft $user pass $password email ${user}@nowhere.net active true level unpaid usage normal admin false"
+  echo $cmd
+  $cmd
+done
+

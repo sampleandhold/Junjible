@@ -1,0 +1,73 @@
+#aycs_chat {
+	font-size:12px;
+	font-family:verdana;
+	width:600px;
+	background-color:#ccc;
+	border:1px solid black;
+}
+
+#aycs_chat #chat_conversation {
+	display:none;
+}
+
+#aycs_chat #chat_conversation {
+	display:none;
+}
+
+#aycs_chat #chat_login {
+	text-align:center;
+	padding:20px;
+}
+
+#aycs_chat #chat_conversation {
+	padding:4px;
+}
+
+#aycs_chat #conversation_messages {
+	float:left;
+	background-color:#eee;
+	padding:2px;
+	line-height:14px;
+	width:438px;
+	height:210px;
+	border:1px solid black;
+	overflow-y:scroll;
+	margin-bottom:4px;
+}
+
+#aycs_chat #conversation_users {
+	float:right;
+	background-color:#eee;
+	padding:2px;
+	line-height:14px;
+	width:138px;
+	height:210px;
+	border:1px solid black;
+	overflow-y:scroll;
+	margin-bottom:4px;
+}
+
+#aycs_chat #conversation_message {
+	width:444px;
+	height:22px;
+	float:left;
+}
+
+#aycs_chat #conversation_option {
+	width:144px;
+	height:22px;
+	float:right;
+}
+
+#aycs_chat #message_input {
+	padding-top:1px;;
+	width:372px;
+}
+
+#aycs_chat #message_button {
+	width:60px;
+}
+
+#aycs_chat #chat_end {
+	clear:both;
+}

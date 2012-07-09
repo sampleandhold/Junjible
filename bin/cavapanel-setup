@@ -1,0 +1,382 @@
+#!/bin/sh
+# cavapanel-setup
+# this program will try to get cavapanel installed and running
+# NOTE: this depends on a working redis installation
+# please see $MAAS/redis/README
+
+set -e
+program="$(basename $0)"
+cwd="$(pwd -P)"
+CP_HOME="$(dirname $0)"
+cd "$CP_HOME/.."
+CP_HOME=$(pwd -P)
+cd "$CP_HOME/../.."
+MAAS="$(pwd -P)"
+cd $cwd
+
+localrepo=""
+export LEIN_SNAPSHOTS_IN_RELEASE=true
+# make sure the directories are ready
+rundir="$CP_HOME/logs"
+if [ ! -d "$rundir" ]; then
+  mkdir -p "$rundir"
+fi
+export logfile="$rundir/$program.log"
+funcs="$CP_HOME/bin/posix.funcs"
+
+# -- generic --
+
+if [ -e "$funcs" ]; then
+  . "$funcs"
+else
+  echo "E: $program could not find common functions $funcs"
+  exit 1
+fi
+
+# -- program functions --
+
+usage() {
+  rv=$1
+  cat >&2 << EOF
+usage: $program [OPTIONS] ACTION
+       ACTIONS
+         configure - setup cavapanel [default]
+       OPTIONS
+	[-v --verbose]	verbose
+	[-d --debug]	debug
+	[-u --usage]	usage
+	[-h --redis-host] redis host [localhost]
+	[-r --redis-port] redis port [6379]
+	[-a --password]	redis password
+	[-n --database]	redis database [1]
+	[-p --port]	cavapanel port [8080]
+	[-b --backup]	backup database first
+EOF
+  # FORCE on by default, STAMPS ignored
+  #     [-f] force
+  exit $rv
+}
+
+# -- helper functions --
+
+cleanup() {
+  # set -x
+  local rc=0
+  if  [ -n "$1" ]; then
+    rc=$1
+  fi
+  trap - 0 HUP INT QUIT TERM # avoid cleanup recursion
+  if [ $rc -gt 0 ]; then
+    printf "\n$program interrupted\n"
+  fi
+  #NOTE on EXIT $rc may be set, but not passed as an argument
+  vecho "$program cleaning up ($rc)"
+  if [ -n "$localrepo" ]; then
+    # vecho "deleting temporary file $localrepo"
+    rm -f "$localrepo"
+  fi
+  if [ $rc -gt 0 ]; then
+    exit $rc
+  fi
+}
+
+trap cleanup 0 # cleanup on EXIT
+trap 'cleanup 2' HUP INT QUIT TERM
+
+tool_installed () {
+    local tool=$1
+    if which $tool > /dev/null 2>&1; then
+	log "$tool has been installed..."
+    else
+	err "$program: $tool is not installed"
+	exit 1
+    fi
+}
+
+# called with DIR JUSTJAR
+# where DIR is the project directory in question
+# JUSTJAR is non-empty if we just need to jar it up
+leinlocal () {
+    #set -x
+    local pdir="$1"
+    local justjar="$2"
+    local pkg
+    local version
+    local group
+    local ver
+    local jar
+    cd "$pdir"
+    if [ -e project.clj ]; then # lein
+	pkg=$(awk '/defproject/ {print $2;}' project.clj)
+	version=$(awk '/defproject/ {print substr($3,2,length($3)-2);}' project.clj)
+    else # mvn
+	pkg="`awk '/artifactId/ {print; exit;}' pom.xml | sed 's/<[^>]*>\([^<]*\)<[^>]*>/\1/g' | sed 's/ //g'`"
+	version="`awk '/version/ {print; exit;}' pom.xml | sed 's/<[^>]*>\([^<]*\)<[^>]*>/\1/g' | sed 's/ //g'`"
+	group="`awk '/groupId/ {print; exit;}' pom.xml | sed 's/<[^>]*>\([^<]*\)<[^>]*>/\1/g' | sed 's/ //g'`"
+	if [ -n "$group" ]; then
+	    pkg="$group/$pkg"
+	fi
+    fi
+    # special case to avoid newline in vecho and log:
+    [ -z "$verbose" ] || printf "local lein pkg $pkg version $version... " >&2
+    printf "local lein pkg $pkg version $version... " >> $logfile
+    if [ -n "$justjar" ]; then
+	jar=${pkg}-${version}.jar
+	if [ -e "$jar" ]; then
+	    log "up to date"
+	else
+	    log "need to jar"
+	    logcmd lein deps
+	    logcmd lein jar
+	fi
+    else
+	# NOTE the trailing cat forces the result code of the pipe to 0
+	ver="`grep ^$pkg $localrepo | cut -d\( -f2 | cut -d\) -f1 | sed 's/, /\n/g' | fgrep $version | cat`"
+	if [ "X$ver" = "X$version" ]; then
+	    log "up to date"
+	else
+	    log "need to build"
+	    if [ -e project.clj ]; then # lein
+		logcmd lein deps
+		logcmd lein jar
+		logcmd lein install
+	    else # mvn
+		logcmd mvn compile
+		logcmd mvn package
+		logcmd mvn install
+	    fi
+	fi
+    fi
+    return 0
+}
+
+verify_maas() {
+  if [ -d "$MAAS/clojure" ]; then
+    log "MAAS respository is at $MAAS"
+  else
+    err "$program: cannot find MaaS repository at $MAAS"
+    exit 1
+  fi
+}
+
+verify_redis() {
+  db=$(redis-cli -a "$password" ping)
+  if [ "X$db" = "XPONG" ]; then
+    log "redis is online..."
+  else
+    err "$program: redis is not running (reply was $db)"
+    exit 1
+  fi
+}
+
+verify_tools() {
+  tool_installed redis-cli
+  tool_installed java
+  tool_installed mvn
+  tool_installed lein
+  if lein localrepo help > /dev/null 2>&1; then
+    log "lein localrepo plugin ready..."
+  else
+    log "installing lein localrepo plugin..."
+    logcmd lein plugin install lein-localrepo 0.3
+  fi
+}
+
+update_localrepo() {
+  localrepo="$(mktemp)"
+  #localrepo=/tmp/localrepo.txt
+  # vecho "saving localrepo list to $localrepo"
+  lein localrepo list > $localrepo
+}
+
+# -- actions --
+
+do_configure() {
+  local fun=configure
+  local rv=0
+  fun_start $fun $*
+  if fun_needed $fun; then
+    # check if we are in a MAAS tree
+    verify_maas
+    # check if we can connect to Redis
+    verify_redis
+    # check if tools are installed
+    verify_tools
+    # update local repo list
+    update_localrepo
+    # --- stop any running cavapanel
+    log "stop cavapanel if it is running..."
+    $MAAS/web/cavapanel/bin/cavapanel stop
+    # --- tools.cli ---
+    # org.clojure/tools.cli (0.2.1-tmarble1)
+    leinlocal $MAAS/clojure/tools.cli
+    # --- future-contrib ---
+    # future-contrib (1.3.0-SNAPSHOT, 1.3.0-tmarble1, 1.3.0-tmarble2, 1.3.0-tmarble3, 1.3.0-tmarble4, 1.3.0-tmarble5, 1.3.0-tmarble6)
+    leinlocal $MAAS/clojure/future-contrib
+    # password-storage 1.0.0-tmarble1
+    leinlocal $MAAS/clojure/password-storage
+    # --- clj-redis ---
+    # clj-redis (0.0.12, 0.0.13-tmarble1)
+    leinlocal $MAAS/clojure/clj-redis
+    # --- redis2xml-v2 ---
+    # redis2xml-v2-1.0.0-SNAPSHOT.jar
+    leinlocal $MAAS/clojure/redis2xml-v2 jar
+    # --- cavapanel ---
+    # cavapanel-0.1.0-tmarble1.jar
+    leinlocal $MAAS/web/cavapanel jar
+    # write .cavapanel and .redis2xml-v2
+    # -- redis2xml-v2 config --
+    if [ -e $HOME/.redis2xml-v2 ]; then
+      log "redis2xml-v2 is configured... making backup"
+      mv $HOME/.redis2xml-v2 $HOME/.redis2xml-v2.bak
+    fi
+    log "configuring redis2xml-v2..."
+    $MAAS/clojure/redis2xml-v2/bin/redis2xml $verbose --host "$host" --port "$redis" --database $database --password "$password" --write-config
+    # -- cavapanel config --
+    if [ -e $HOME/.cavapanel ]; then
+      log "cavapanel is configured... making backup"
+      mv $HOME/.cavapanel $HOME/.cavapanel.bak
+    fi
+    log "configuring cavapanel..."
+    $MAAS/web/cavapanel/bin/cavapanel run $verbose --host localhost --redis-host "$host" --redis-port "$redis"  --password "$password" --database $database --port "$port" --write-config
+    # backup?
+    if [ -n "$backup" ]; then
+      log "database backup requested..."
+      logcmd $CP_HOME/bin/cavapanel-backup
+    fi
+    # -- load database  --
+    # mails="`redis-cli -a \"$password\" -n $database SMEMBERS \"allowed:emails\" | wc -l`"
+    # if [ "X$mails" = "X9" ]; then
+    #  log "redis2xml-v2 database is ready"
+    log "database initial flush and load with allowed e-mails..."
+    $MAAS/clojure/redis2xml-v2/bin/redis2xml $verbose --flush --import $MAAS/web/cavapanel/data/database.xml  
+    # add plugins
+    log "adding plugins to the database (from Junjible-Server source code)"
+    logcmd $CP_HOME/bin/add-plugins $verbose
+    # add permissions
+    log "adding permissions to the database (from Junjible source code)"
+    logcmd $CP_HOME/bin/add-perms $verbose
+    # add user
+    log "adding users to the database"
+    logcmd $CP_HOME/bin/add-users $verbose
+    # -- cavapanel --
+    log "NOTE: you can restart cavapanel with this..."
+    log "$MAAS/web/cavapanel/bin/cavapanel restart"
+    log "-or-"
+    log "cd $MAAS/web/cavapanel; lein run -v"
+    # note: EXIT will call cleanup
+    fun_done $fun
+  fi
+  return $rv
+}
+
+# -- main --
+
+args=""
+debug=0
+verbose=""
+force="--force"
+host="localhost"
+redis=6379
+port=8080
+password=""
+database=1
+backup=""
+
+action=""
+default_action="configure"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -d|--debug) 
+      debug=$((debug + 1))
+      ;;
+    -v|--verbose)
+      verbose="--verbose"
+      ;;
+    -f|--force) 
+      force='--force'
+      ;;
+    -u|--usage)
+      usage 0
+      ;;
+    -b|--backup)
+      backup="--backup"
+      ;;
+    -h|--redis-host) 
+      if [ $# -gt 1 ]; then
+        host="$2"
+	shift
+      else
+	usage 1
+      fi
+      ;;
+    -r|--redis-port) 
+      if [ $# -gt 1 ]; then
+        redis="$2"
+	shift
+      else
+	usage 1
+      fi
+      ;;
+    -a|--password) 
+      if [ $# -gt 1 ]; then
+        password="$2"
+	shift
+      else
+	usage 1
+      fi
+      ;;
+    -n|--database) 
+      if [ $# -gt 1 ]; then
+        database="$2"
+	shift
+      else
+	usage 1
+      fi
+      ;;
+    -p|--port) 
+      if [ $# -gt 1 ]; then
+        port="$2"
+	shift
+      else
+	usage 1
+      fi
+      ;;
+    -*)
+      usage 1
+      ;;
+    *)
+      if [ -z "$action" ]; then
+        action="$1" # assume this action is valid
+      else
+        logerr "at most one action may be specified"
+        usage 1
+      fi
+      ;;
+    esac
+    shift
+done
+
+# insure all arguments handled
+[ "$#" -eq 0 ] || usage 1
+
+# insure an action has been specified
+if [ -z "$action" ]; then
+  action=$default_action
+fi
+
+evars=""
+# verify_vars $evars
+
+# show additional debugging information
+[ $debug -eq 0 ] || preaction_debug $evars host redis password database port backup
+
+export logfile="$rundir/$program.log"
+# pidfile="$rundir/$program.pid"
+export STAMPS="$rundir/stamps"
+if [ ! -d "$STAMPS" ]; then
+  mkdir -p "$STAMPS"
+fi
+
+# perform the requested action
+do_$action

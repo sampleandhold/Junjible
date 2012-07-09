@@ -1,0 +1,352 @@
+#!/bin/sh
+#Configurations injected by install_server below....
+
+### BEGIN INIT INFO
+# Provides:          cavapanel
+# Required-Start:    $syslog $remote_fs $network
+# Required-Stop:     $syslog $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: redis-server
+### END INIT INFO
+
+PROGRAM=cavapanel
+CP_HOME=$(dirname $0)
+cd $CP_HOME/..
+CP_HOME=$(pwd -P)
+LOGDIR=$CP_HOME/logs
+LOGFILE=$LOGDIR/$PROGRAM.log
+PIDFILE=$LOGDIR/$PROGRAM.pid
+TESTSLOGDIR=$LOGDIR/unit-tests
+VERSION=
+NULL_DEVICE=/dev/null
+
+###############
+
+# quit the script if we encounter an error
+set -e
+
+JAR="$(ls -1 | grep 'jar$')" || true # do NOT exit on failure to find a jar
+
+# NOTE this main class *MUST* match project.clj
+main_default=cavapanel.server
+main=$main_default
+
+port=8080
+if [ -e "$HOME/.$PROGRAM" ]; then
+  port=$(awk -F= '/^port=/ { print $2;}' "$HOME/.$PROGRAM")
+fi
+url="http://localhost:$port"
+
+# set BROWSER to the command line for mozilla-remote
+if [ -z "$BROWSER" ]; then
+  BROWSER=/usr/lib/iceweasel/iceweasel
+fi
+
+getversion() {
+  if [ -e project.clj ]; then
+    VERSION=$(head -1 project.clj | cut -d\" -f2)
+    JAR=$PROGRAM-$VERSION.jar
+    main=$(awk '/:main/ { print $2;}' project.clj)
+    if [ "$main" != "$main_default" ]; then
+	echo "WARNING: main=$main BUT main_default=$main_default"
+    fi
+  else
+    echo "cannot find project.clj"
+    exit 1
+  fi
+}
+
+rejar() {
+  echo "Updating the cavapanel jar..."
+  getversion
+  # DEFENSIVE CODING: force clean
+  lein clean
+  LEIN_SNAPSHOTS_IN_RELEASE=true lein jar
+}
+
+ssha_ready() {
+  ssha_functions=true
+  verbose_ssha="" # verbose_ssha="$verbose"
+  . $CP_HOME/bin/ssha
+  if do_ssha_passwordless; then
+      [ "$cmd" = "run" ] || echo "connected to the ssh-agent"
+  else
+      echo "WARNING: NOT connected to the ssh-agent"
+  fi
+}
+
+# return 0 if running, 1 otherwise
+status() {
+  local rv=1
+  if [ -e $PIDFILE ]; then
+      pid=$(cat $PIDFILE)
+      if kill -0 $pid > /dev/null 2>&1 ; then
+	  rv=0
+      else
+	  rm -f $PIDFILE # remove stale PIDFILE
+      fi
+  fi
+  if [ $rv -eq 0 ]; then
+      [ "$cmd" = "run" ] || echo "running [$pid]"
+  else
+      [ "$cmd" = "run" ] || echo "stopped"
+  fi
+  return $rv
+}
+
+start() {
+  local rv i
+  [ "$cmd" = "run" ] || logger -s -t $PROGRAM "start $port"
+  if [ ! -e "$JAR" ]; then
+    rejar
+    #echo "cannot find jar: $JAR"
+    #exit 1
+  fi
+  if [ ! -d logs ]; then
+    mkdir -p logs
+  fi
+  #if [ -e $PIDFILE ]; then
+  #  echo "deleting old $PIDFILE NOTE: you may need to kill $(cat $PIDFILE)"
+  #  rm $PIDFILE
+  #fi
+  # connect to the ssh agent
+  ssha_ready
+  if status && [ "$cmd" != "run" ]; then
+    echo "please stop before start, or specify restart (NOT STARTED)"
+    exit 1
+  else
+    jargs="-Xms128M -Xmx256M"
+    # jargs="-Xms256m -Xmx512m"
+    jargs="$jargs -Dproject.version=$VERSION"
+    jargs="$jargs -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false"
+    # NOTE: use the following when you want to connect with jdb
+    # jargs="$jargs -agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y"
+    cp=$(find lib -name '*.jar' -printf "%p:")
+    cp="${cp}$JAR"
+    clj="(use '$main)(apply -main *command-line-args*)"
+    #echo java $jargs -cp "$cp" clojure.main -e "$clj" $NULL_DEVICE $args
+    if [ "$cmd" != "run" ]; then
+      if [ -e $LOGFILE.1 ]; then
+        mv $LOGFILE.1 $LOGFILE.2
+      fi
+      if [ -e $LOGFILE ]; then
+        mv $LOGFILE $LOGFILE.1
+      fi
+      echo "Starting $PROGRAM..."
+      # NOTE: be very careful to close file descriptors
+      # see http://www.celinio.net/techblog/?p=1038
+      # https://issues.jenkins-ci.org/browse/JENKINS-2729
+      # https://wiki.jenkins-ci.org/display/JENKINS/Spawning+processes+from+build
+      unset BUILD_ID
+      echo java $jargs -cp "$cp" clojure.main -e "$clj" $NULL_DEVICE $args '<' /dev/null '>' $LOGFILE '2>&1' '&' > $LOGFILE
+      java $jargs -cp "$cp" clojure.main -e "$clj" $NULL_DEVICE $args < /dev/null >> $LOGFILE 2>&1 &
+      pid=$!
+      echo $pid > $PIDFILE
+      echo "running [$pid]"
+      wget=""
+      #starttime=20
+      if ! which wget > /dev/null 2>&1; then
+	  echo "ERROR: cannot find wget"
+	  exit 1
+      fi
+      wget=$(which wget)
+      urlpage=logs/cavapanel.html
+      rv=1
+      i=6
+      printf "verifying the site is up.."
+      while [ $rv -ne 0 ] && [ $i -gt 0 ]; do
+	  sleep 5
+	  printf "."
+	  # the return code will depend on if this worked
+	  # do NOT force exit here
+	  wget -q -t 1 -T 10 -O $urlpage $url || true
+	  if [ -e $urlpage ]; then
+	      if grep 'title.*Junjible' $urlpage > /dev/null; then
+		  echo "site is up!"
+		  rv=0
+              fi
+	  fi
+	  i=$(($i - 1))
+      done
+      if [ $rv -ne 0 ]; then
+	  echo "site is NOT up"
+  	  exit 1
+      fi
+    else
+      # set -x
+      cmd="java $jargs -cp \"$cp\" clojure.main -e \"$clj\" $NULL_DEVICE $args"
+      # echo $cmd
+      eval $cmd
+    fi
+  fi
+}
+
+stop() {
+  logger -s -t $PROGRAM "stop $port"
+  if status; then
+      echo "Stopping ..."
+      kill $pid
+  fi
+  rm -f $PIDFILE
+}
+
+browser_running() {
+    $BROWSER -remote 'ping()' > /dev/null 2>&1
+    local rv=$?
+    return $rv
+}
+
+browser_addtab() {
+    local url="$1"
+    $BROWSER -remote "openURL($url,new-tab)" > /dev/null 2>&1
+}
+
+browser_start() {
+    local url="$1"
+    mkdir -p $TESTSLOGDIR
+    $BROWSER "$url" > $TESTSLOGDIR/browser.log 2>&1 &
+}
+
+browser_opentab() {
+    local url="$1"
+    if browser_running ; then
+	browser_addtab "$url"
+    else # NO, start with URL
+	browser_start "$url"
+    fi
+}
+
+unittest() {
+    all="$url/unit-tests/all?log=true"
+    mkdir -p $TESTSLOGDIR
+    allresults="$TESTSLOGDIR/all.html"
+    timeout=15
+    if [ -e $BROWSER ]; then
+	echo "opening $all in a new tab of $BROWSER"
+	rm -f $allresults
+	xvfb_pid=""
+	browser_pid=""
+	if [ -n "$DISPLAY" ]; then
+	    echo "using real DISPLAY=$DISPLAY"
+	    browser_opentab "$all"
+	else
+	    DISPLAY=:1
+	    if xdpyinfo -disp $DISPLAY > /dev/null 2>&1; then
+		# useful in the case where we want to see what happens in VNC
+		echo "using running DISPLAY=$DISPLAY (perhaps it is VNC)"
+	    else
+		echo "using virtual DISPLAY=$DISPLAY"
+		Xvfb $DISPLAY -screen 0 1024x768x24 > $TESTSLOGDIR/Xvfb.log 2>&1 &
+		xvfb_pid=$!
+		echo "started Xvfb [$xvfb_pid]"
+		sleep 3
+	    fi
+	    export DISPLAY
+	    $BROWSER "$all" > $TESTSLOGDIR/browser.log 2>&1 &
+	    browser_pid=$!
+	    echo "started $BROWSER [$browser_pid]"
+        fi
+	echo "sleeping $timeout seconds for the test to complete..."
+	sleep $timeout # guess how long it will take to process
+	if [ -n "$browser_pid" ]; then
+	    echo "stopping $BROWSER [$browser_pid]"
+	    kill $browser_pid
+	    sleep 1
+        fi
+	if [ -n "$xvfb_pid" ]; then
+	    echo "stopping Xvfb [$xvfb_pid]"
+	    kill $xvfb_pid
+        fi
+	if [ -e $allresults ]; then
+	    failed=$(awk -F= '/^=failed=/ { print $3; exit;}' $allresults)
+	    if [ "$failed" = "0" ]; then
+		echo "all tests passed"
+		exit 0
+	    else
+		echo "ERROR there were $failed test failures"
+            fi
+	else
+	    echo "did not find results file $allresults"
+	fi
+    else
+       echo "BROWSER not found: $BROWSER"
+    fi
+    exit 1
+}
+
+args=""
+cmd="$1"
+shift
+case "$cmd" in
+    start)
+	while [ "$#" -gt 0 ]; do
+	    args="$args $1"
+            if [ "$1" = "--port" ] && [ "$#" -gt 1 ]; then
+              port=$2
+              url="http://localhost:$port"
+            fi
+	    shift
+	done
+	args="$args --verbose" # hardcode verbose for now
+	start
+	;;
+    stop)
+	stop
+	;;
+    restart)
+	while [ "$#" -gt 0 ]; do
+	    args="$args $1"
+            if [ "$1" = "--port" ] && [ $# -gt 1 ]; then
+              port=$2
+              url="http://localhost:$port"
+            fi
+	    shift
+	done
+	args="$args --verbose" # hardcode verbose for now
+	stop
+	sleep 2
+	start
+	;;
+    rejar)
+	rejar
+	;;
+    rerun)
+	while [ "$#" -gt 0 ]; do
+	    args="$args $1"
+            if [ "$1" = "--port" ] && [ $# -gt 1 ]; then
+              port=$2
+              url="http://localhost:$port"
+            fi
+	    shift
+	done
+	stop
+	rejar
+	start
+	;;
+    run)
+	while [ "$#" -gt 0 ]; do
+	    args="$args '$1'" # NOTE WE QUOTE ARGS ONLY HERE
+            shift
+	done
+	start
+	;;
+    status)
+	status
+	;;
+    test)
+	while [ "$#" -gt 0 ]; do
+	    args="$args $1"
+            if [ "$1" = "--port" ] && [ "$#" -gt 1 ]; then
+              port=$2
+              url="http://localhost:$port"
+            fi
+	    shift
+	done
+	unittest
+	;;
+    *)
+	echo "Please use one of these arguments: start, stop, restart, rejar, run, rerun, status, test"
+	;;
+esac
+

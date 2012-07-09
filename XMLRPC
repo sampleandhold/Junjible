@@ -1,0 +1,7 @@
+Notes on XMLRPC
+
+Copy the contents of apache-xml-rpc folder to project /lib folder
+
+    Trac XMLRPC URL: https://mail.chatsubo.net/maas-trac/login/rpc
+    Trac XMLRPC Username: jenkins
+    Trac XMLRPC Password: safe4blocs

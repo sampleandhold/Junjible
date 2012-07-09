@@ -1,0 +1,139 @@
+(ns cavapanel.views.admin
+  (:require [cavapanel.views.common :as common]
+            [noir.session :as session]
+            [noir.response :as response]
+            [hiccup.page-helpers :as web]
+            [cavapanel.database :as db])
+  (:use [noir.core :only [defpage]]
+        [redis.core :only [with-server]]
+        [hiccup.core]))
+
+(defn adminusers []
+  [:div.tab.subpanel
+   [:div.twelvecol
+    [:h4 "Users"]
+    [:div#useradmin
+     [:div#users-content]
+
+     [:input {:type "hidden", :name "users-page_count", :id "users-page_count"}] 
+
+
+     ]
+    ]
+   ] ;; tab
+  )
+(defn admindash []
+  [:div.tab.subpanel.current
+   [:div.tencol.infoPage
+    [:h4 "Dashboard"]
+    [:div#dash]
+[:input {:type "button", :value "refresh", :onclick "getDashboard();"}]
+     [:script {:type "text/javascript"}
+        (str "
+      getDashboard();
+      ")]
+
+    ]
+   ] ;; tab
+  )
+(defn adminplugins []
+  [:div.tab.subpanel
+   [:div.sixcol
+    [:h4 "Plugins"]
+    [:div#pluginadmin
+     [:div#plugins-content]
+
+     [:input {:type "hidden", :name "plugins-page_count", :id "plugins-page_count"}] 
+     ]
+    ]
+   ] ;; tab
+  )
+(defn admincode []
+  [:div.tab.subpanel
+   [:div.tencol.infoPage
+    [:h4 "Code"]
+    ]
+   ] ;; tab
+  )
+
+(defn admin5 []
+  [:div.tab.subpanel
+   [:div.tencol.infoPage
+    [:h4 "Other stuff"]
+    ]
+   ] ;; tab
+  )
+
+(defpage "/admin" []
+  (with-server (db/redis-options)
+    (let [user (db/user?)
+          admin? (and user (db/admin-user? user))]
+      (if-not admin?
+        (if user
+          (response/redirect "/panel")
+          (do ;; not even logged in
+            (session/flash-put! "/panel")
+            (response/redirect "/#login")))
+        ;; user has admin priv
+        (common/layout
+         "panel"
+         (str
+          (common/layout-header)
+          (html
+           [:div#thePanel]
+           [:div#panelNav {:class "container gradient aboutNav"}
+            [:div#panelExplanation.row
+             [:div {:class "twelvecol last gradient"}
+              [:span [:mark "submenu"]]
+              ]
+             ]
+            [:div.row
+             [:div {:class "twelvecol last"}
+              ;;(web/include-js "/js/admin.js")
+              [:ul#tabNav
+               [:li.current [:a#admin1-tab.gradient {:href "#"}
+                             "dashboard"]]
+               [:li [:a#admin2-tab.gradient {:href "#"}
+                     "users"]]
+               [:li [:a#admin3-tab.gradient {:href "#"}
+                     "plugins"]]
+               [:li [:a#admin4-tab.gradient {:href "#"}
+                     "code"]]
+               [:li [:a#admin5-tab.gradient {:href "#"}
+                     "admin 5"]]
+               ]
+              ]
+             ]
+            ]
+           [:div#panelContainer.container
+            [:div.row
+             [:div#tabContainer {:class "twelvecol last",
+                                 :ontouchstart "touchStart(event,'tabContainer');",
+                                 :ontouchend "touchEnd(event);",
+                                 :ontouchmove "touchMove(event);",
+                                 :ontouchcancel "touchCancel(event);"}
+              (admindash)
+              (adminusers)
+              (adminplugins)
+              (admincode)
+              (admin5)
+              ]
+             ]
+            ] ;; panelContainer
+           [:div#aboutSection {:class "container gradient"}
+            [:section
+             [:div#notes {:class "twelvecol last", :style "display:none;"}
+              [:div#contactInfo.gradient
+               [:div#contactRight
+                [:p#notification
+                 [:img {:src "/images/loading-gear.gif"}]
+                 [:em#notify-text "Rebooting server..."]
+                 ]
+                ]
+               ]
+              ]
+             ]
+            ];; aboutSection
+           )
+          (common/layout-footer)
+          ))))))

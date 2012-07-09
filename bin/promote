@@ -1,0 +1,76 @@
+#!/bin/sh
+# promote prod-dir
+# promote project to production
+
+PROGRAM=cavapanel
+CP_HOME=$(dirname $0)
+cd $CP_HOME/..
+CP_HOME=$(pwd -P)
+
+# quit the script if we encounter an error
+set -e
+
+tarfile=$PROGRAM.tar.gz
+
+if [ "$#" -ne 1 ]; then
+    echo "usage: promote prod-dir"
+    exit 1
+fi
+proddir="$1"
+
+# optionally create distribution
+# if [ ! -e "../$tarfile" ]; then
+#     echo "no distribution tarball present, creating now..."
+#     ./bin/package
+# fi
+# mandatory distribution update..
+echo "creating distribution tarball now..."
+./bin/package
+
+# is there a proddir? if not create it
+if [ ! -d "$proddir" ]; then
+    echo "creating production directory: $proddir"
+    mkdir -p "$proddir"
+fi
+
+# is there an old tarfile? if so remove it
+if [ -e "$proddir/$tarfile" ]; then
+    echo "deleting old tarball  : $proddir/$tarfile"
+    rm "$proddir/$tarfile"
+fi
+
+echo "copying new tarball to: $proddir/$tarfile"
+cp "../$tarfile" "$proddir/$tarfile"
+
+# is there a backup dir? if so delete it now
+if [ -d "$proddir/$PROGRAM.bak" ]; then
+    echo "removing old backup: $proddir/$PROGRAM.bak"
+    rm -r "$proddir/$PROGRAM.bak"
+fi
+
+# is there a current prod-dir? if so shutdown the service
+if [ -x "$proddir/$PROGRAM/bin/$PROGRAM" ]; then
+    echo "shutting down production service..."
+    "$proddir/$PROGRAM/bin/$PROGRAM" stop
+fi
+
+# is there a current prod-dir? if so back it up
+if [ -d "$proddir/$PROGRAM" ]; then
+    echo "backing up production directory..."
+    mv "$proddir/$PROGRAM" "$proddir/$PROGRAM.bak"
+fi
+
+echo "unpacking new tarball..."
+cd "$proddir"
+tar xf "$tarfile"
+
+# was there a users archive? bring it back!
+if [ -d "$proddir/$PROGRAM.bak/users" ]; then
+    echo "restoring user world archives..."
+    mv "$proddir/$PROGRAM.bak/users" "$proddir/$PROGRAM/"
+fi
+
+echo "starting the production service..."
+"$PROGRAM/bin/$PROGRAM" start
+
+exit 0

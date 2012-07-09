@@ -1,0 +1,13 @@
+#!/usr/bin/python
+# urlescape
+
+import sys, urllib
+
+if __name__ == '__main__':
+   if len(sys.argv) == 2:
+      print urllib.quote_plus(sys.argv[1])
+   elif len(sys.argv) == 3:
+      print urllib.unquote_plus(sys.argv[2])
+   else:
+      print 'usage: urlescape "unsafe characters"'
+      print 'usage: urlescape -d "safe%20characters"'

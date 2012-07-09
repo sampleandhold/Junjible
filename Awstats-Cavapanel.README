@@ -1,0 +1,7 @@
+A SIMPLE config file has been created: web/cavapanel/awstats/awstats.Junjible.conf
+You should have a look inside to check and change manually main parameters.
+You can then manually update your statistics for 'Junjible' with command:
+> perl awstats.pl -update -config=Junjible
+You can also build static report pages for 'Junjible' with command:
+> perl awstats.pl -output=pagetype -config=Junjible
+

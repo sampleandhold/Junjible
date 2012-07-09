@@ -1,0 +1,492 @@
+(ns cavapanel.views.welcome
+  (:require [cavapanel.views.common :as common]
+            [hiccup.page-helpers :as web]
+            [noir.response :as response]
+            [noir.validation :as valid]
+            [noir.session :as session]
+            [noir.cookies :as cookies]
+            [cavapanel.database :as db])
+  (:use [noir.core :only [defpage]]
+        [hiccup.core :only [html]]
+        [hiccup.page-helpers]
+        [future-contrib.pphtml]
+        [redis.core :only [with-server]]
+        [hiccup.core]))
+
+(defpage "/test" []
+  (common/root-page))
+
+
+(defpage "/" []
+  (with-server (db/redis-options)
+    (pphtml-str
+     (html5
+      [:head
+       [:title "Junjible" ]
+       [:meta {:http-equiv "content-type"
+               :content "text/html;charset=UTF-8"}]
+       [:meta {:name "description"
+               :content ""}]
+       [:meta {:name "keywords"
+               :content ""}]
+       [:link {:rel "stylesheet"
+               :type "text/css"
+               :href "/css/intro.css"}]
+       [:script {:type "text/javascript"
+                 :src "/js/jquery.min.js"}]
+       [:script {:type "text/javascript"
+                 :src "/js/jquery.scrollTo.js"}]
+       [:script {:type "text/javascript"
+                 :src "/js/jquery.nivo.slider.js"}]
+       [:script {:type "text/javascript"
+                 :src "/js/junjible.js"}]
+       [:script {:type "text/javascript"}
+        (str "
+$(document).ready(function() {
+	$('.b_logo').click(function(){
+		$.scrollTo('.a_top', 1200);
+	});
+	$('.b_contact').click(function(){
+  $('.contact').fadeIn(2000);
+		$.scrollTo('.a_contact', 1200);
+	});
+	$('.b_support').click(function(){
+          window.location.href = '/support';
+	});
+	$('.b_about').click(function(){
+          window.location.href = '/about';
+	});
+	$('.b_work').click(function(){
+  $('.work').fadeIn(2000);
+		$.scrollTo('.a_port', 1200);
+	$('.b_contact').click(function(){
+  $('.contact').fadeIn(2000);
+		$.scrollTo('.a_contact', 1200);
+	});
+	});
+	$('.b_cta').click(function(){
+  $('.work').fadeIn(2000);
+		$.scrollTo('.a_port', 1200);
+	$('.b_contact').click(function(){
+  $('.contact').fadeIn(2000);
+		$.scrollTo('.a_contact', 1200);
+	});
+	});      
+});
+")]
+       [:script {:type "text/javascript"}
+        (str "
+    $(window).load(function() {
+        $('#slider').nivoSlider();
+    });
+")]]
+
+       [:body
+        [:div {:class "a_top"}]
+        [:div {:class "bar"}
+         [:div {:class "logo"}
+          [:a {:href "javascript:void(0)"
+               :class "b_logo"}]]; div.logo
+         [:div {:class "nav"}
+          [:div {:class "login-holder"}
+           [:form#login-form {:method "POST"
+                              :action "/login"}
+            [:span
+             [:input
+              (let
+                  [attr {:type "checkbox"
+                         :name "remember"}
+                   checked (if (db/lastuser)
+                             (hash-map "checked" "true"))]
+                (merge attr checked))]; input
+             [:font {:size "1"} "Remember me &nbsp;"]
+             [:input {:type "text"
+                      :name "user"
+                      :class "text-field"
+                      :maxlength 30
+                      :size 40
+                      :value (db/lastuser)}]; input
+             [:input {:type "password"
+                      :name "pass"
+                      :class "text-field"
+                      :maxlength 30
+                      :size 40
+                      :value ""}]; input
+             [:input {:type "hidden"
+                      :name "sublogin"
+                      :value 1}]; input
+             [:input#login-button.login {:type "submit"
+                                         :value "Login"}]]; span
+            ]; form#login-form
+           [:span {:class "or"}
+            [:img {:src "/images/or.png"}]]; span
+           [:input {:type "button"
+                    :class "login b_contact"
+                    :value "sign up"}]; input
+           [:span {:class "or"}]; span
+           [:input {:type "button"
+                    :class "login b_support"
+                    :value "support"}]; input
+           [:input {:type "button"
+                    :class "login b_about"
+                    :value "about"}]; input
+           ]]; div.nav       
+         ]; div.bar
+        [:div {:class "wrapper"}
+         [:div {:class "intro"}
+          [:div {:class "intro_cta"}
+           [:a {:href "javascript:void(0);"
+                :class "b_cta"}]]; div.intro_cta
+          ]; div.intro
+
+         [:div {:class "work"}
+          [:div {:class "a_port"}]
+          [:div {:id "slider"
+                 :class "nivoSlider"
+                 :style "border-style:solid;border-color: #ffffff;border-width: 2px;"}
+           [:a {:href ""
+                :target "_blank"}
+            [:img {:src "/images/intro/img1.jpg"
+                   :title "#htmlcaption1"
+                   :alt ""}]]; a
+           [:a {:href ""
+                :target "_blank"}
+            [:img {:src "/images/intro/img2.jpg"
+                   :title "#htmlcaption2"
+                   :alt ""}]]; a
+           [:a {:href ""
+                :target "_blank"}
+            [:img {:src "/images/intro/img3.jpg"
+                   :title "#htmlcaption3"
+                   :alt ""}]]; a
+           [:a {:href ""
+                :target "_blank"}
+            [:img {:src "/images/intro/img4.jpg"
+                   :title "#htmlcaption4"
+                   :alt ""}]]; a
+           ]
+           [:input {:type "button"
+                    :class "login b_contact"
+                    :value "Sign Up"
+                    :style "margin-left:405px;"}]
+          [:div {:id "htmlcaption1"
+                 :class "nivo-html-caption"}
+           [:h1 "Lorem Ipsum"]
+           [:ul {:class "things"}
+            [:li (str "this is some text here")]
+            [:li (str "this is also some other text here")]
+            [:li (str "how many of these do we need?")]
+            [:li (str "this is how we do it!")]
+            ]]; div.nivo-html-caption
+          [:div {:id "htmlcaption2"
+                 :class "nivo-html-caption"}
+           [:h1 "Lorem Ipsum"]
+           [:ul {:class "things"}
+            [:li (str "this is some text here")]
+            [:li (str "this is also some other text here")]
+            [:li (str "how many of these do we need?")]
+            [:li (str "this is how we do it!")]
+            ]]; div.nivo-html-caption
+          [:div {:id "htmlcaption3"
+                 :class "nivo-html-caption"}
+           [:h1 "Lorem Ipsum"]
+           [:ul {:class "things"}
+            [:li (str "this is some text here")]
+            [:li (str "this is also some other text here")]
+            [:li (str "how many of these do we need?")]
+            [:li (str "this is how we do it!")]
+            ]]; div.nivo-html-caption
+          [:div {:id "htmlcaption4"
+                 :class "nivo-html-caption"}
+           [:h1 "Lorem Ipsum"]
+           [:ul {:class "things"}
+            [:li (str "this is some text here")]
+            [:li (str "this is also some other text here")]
+            [:li (str "how many of these do we need?")]
+            [:li (str "this is how we do it!")]
+            ]];; div.nivo-html-caption
+]
+          [:div {:class "contact"}
+           [:div {:class "a_contact"}
+            [:div {:class "contact-title"}]
+            [:br {:style "clear: both;"}]
+            [:div {:class "contact-form"}
+             [:form {:method "POST"
+                     :action "/signup"}
+              [:table {:align "left"
+                       :border 0
+                       :cellspacing 0
+                       :cellpadding 0}
+               [:tr
+                [:td {:colspan 2
+                      :align "left"
+                      :style "text-align:left"}]]; tr
+               [:tr
+                [:td "Username &nbsp;&nbsp;"]
+                [:td [:input {:type "text"
+                              :name "user"
+                              :class "text-field"
+                              :maxlength 30
+                              :value ""}]]
+                [:td {:style "text-align:left;"}]]; tr
+               [:tr
+                [:td {:colspan 2
+                      :align "left"
+                      :style "text-align:left"}]]; tr
+               [:tr
+                [:td "Password &nbsp;&nbsp;"]
+                [:td [:input {:type "password"
+                              :name "pass"
+                              :class "text-field"
+                              :maxlength 30
+                              :value ""}]]
+                [:td {:style "text-align:left;"}]]; tr
+               [:tr
+                [:td {:colspan 2
+                      :align "left"
+                      :style "text-align:left"}]]; tr
+               [:tr
+                [:td "Re-enter password &nbsp;&nbsp;"]
+                [:td [:input {:type "password"
+                              :name "pass2"
+                              :class "text-field"
+                              :maxlength 30
+                              :value ""}]]
+                [:td {:style "text-align:left;"}]]; tr
+               [:tr
+                [:td "Email &nbsp;&nbsp;"]
+                [:td [:input {:type "text"
+                              :name "email"
+                              :class "text-field"
+                              :maxlength 50
+                              :value ""}]]
+                [:td {:style "text-align:left;"}]]; tr
+               [:tr
+                [:td {:colspan 2
+                      :align "left"
+                      :style "text-align:right"}
+                 [:input#login-button.login {:type "submit"
+                                             :value "register"}]]]; tr
+               ]; table
+             ]; div.contact-form
+             ]]; div.contact
+           [:div {:class "contact-services"}
+            [:h1 (str "What we do")]
+(str"
+Minecraft Servers on Demand <br />
+Plugins <br />
+Killer Mods <br />
+Tournaments <br />
+Collaboration <br />
+Robust Control Panel <br />
+Free to Sign Up
+")]; div.contact-services
+           [:div {:class "contact-follow"}
+            [:h1 (str "FOLLOW US")]
+            [:div {:class "follow-links"}
+             [:ul
+              [:li {:id "facebook"}
+               [:a {:href "https://www.facebook.com/pages/Junjible/300726330012986"}
+                [:img {:src "/images/icon_facebook_gray.png"}]]]
+              ]
+             ]]]]]))))
+
+
+(defn aboutAbout []
+  [:div.tab.subpanel.current
+   [:div.sixcol
+    [:h4 "About Junjible"]
+    [:div.legal (str "
+'Junjible' means something like 'able to be joined,' which is what we do -
+we join Minecraft players together.
+<p />                     
+We’re a server host but, -_- Junjible.com is not just about servers!
+We want you to love our server space, so we’ve spiced it up.  We offer
+a sleek easy to use control panel that allows you, the Server Admin, to control the world, like a boss, add mods or
+plug-ins as well as all other basic Minecraft server functionality.
+If you are new to server hosting, this means that you are the god of
+your server.  You make your own world, control the players on your
+world and what they can and can’t do and decide when your server is on
+and off.
+<p />
+We also offer a mod store which has lots of Minecraft mods that are
+easy to access and install.   The mods are some of the coolest out
+there - and they’re all free!
+<p />
+Take a tour here and check out how incredibly easy to use we are.")]; div.legal
+    ]; div.sixcol
+   ];div.tab.subpanel.current
+  ); defn aboutAbout
+
+
+(defn aboutPrivacy []
+  [:div.tab.subpanel
+   [:div.tencol.infoPage
+    [:h4 "Privacy Policy"]
+    [:p]
+    [:div {:class "legal"}
+     [:p]
+     (str "
+When you purchase a game from us, you fill in your personal/company details. You agree that we store and use your information in our organization to complete the agreement towards you. We agree not to use that information except as necessary to process the terms of this agreement and assist you in getting access to your account.  We will not share your information with any third party for any reason.
+")
+     [:p]
+     [:h3 (str "Company Information")]
+     [:p]
+     (str "Chresco, LLC") [:br]
+     (str "143 Ave. Patero de Oro") [:br]
+     (str "San Clement, CA 92672") [:br][:br]
+     [:a {:href "mailto:support@junjible.com"
+          :class "uline"}
+      (str "support@junjible.com")]
+     [:p]]; div.legal
+    ]])
+
+
+(defn aboutContact []
+  [:div.tab.subpanel
+   [:div.sixcol
+    [:h4 (str "Contact")]
+    [:p]
+    [:div {:class "legal"}
+     [:p]
+     (str "Chresco, LLC") [:br]
+     (str "143 Ave. Patero de Oro") [:br]
+     (str "San Clement, CA 92672") [:br][:br]
+     [:a {:href "mailto:support@junjible.com"
+          :class "uline"}
+      (str "support@junjible.com")]
+     [:p]]; div.legal
+    ]])
+
+
+(defn aboutTour []
+  [:div.tab.subpanel
+   [:div.tencol.infoPage
+    [:h4 (str "Take a Tour")]
+    [:p]
+    [:ul {:id "slider"}
+     [:li [:img {:src "/images/tour1.jpg"
+                 :alt "test1"}]]; li
+     [:li [:img {:src "/images/tour2.jpg"
+                 :alt "test2"}]]; li
+     [:li [:img {:src "/images/tour3.jpg"
+                 :alt "test3"}]]; li
+     [:li [:img {:src "/images/tour4.jpg"
+                 :alt "test4"}]]; li
+     [:li [:img {:src "/images/tour5.jpg"
+                 :alt "test5"}]]]; ul
+    [:script
+     (str "
+			$('#slider').anythingSlider({
+				resizeContents      : false, // If true, solitary images/objects in the panel will expand to fit the viewport
+				navigationSize      : 5,     // Set this to the maximum number of visible navigation tabs; false to disable
+				navigationFormatter : function(index, panel){ // Format navigation labels with text
+					return ['Control Panel', 'Worlds', 'Groups', 'Plugins', 'Mods'][index - 1];
+				},
+				onSlideBegin: function(e,slider) {
+					// keep the current navigation tab in view
+					slider.navWindow( slider.targetPage );
+				}
+			});
+")]]])
+
+
+(defn aboutTerms []
+  [:div.tab.subpanel
+   [:div.tencol.infoPage
+    [:h4 (str "Terms of Use")]
+
+    [:div {:class "legal"}
+     ]
+     [:p (str "This document might look familiar.  We thought Mojang did a bang-up job of it, so we made a similar document because we agree with the general idea of openness and honesty and the lack of a huge EULA.") ]
+[:h3 (str "What You Get For The Fee You Pay Junjible")] 
+[:p (str "When you purchase Junjible you are renting server space through our software application.  For that, we charge you a monthly fee.   You must have an existing, paid, Minecraft account to use Junjible.") ]
+[:p (str "Most of our other services are offered free of charge.  Unfortunately, we cannot provide those services in every possible platform.   They will work on Junjible servers, which is all that we can promise you at the moment.  All of the other services may be subject to updates and we cannot guarantee their functionality at all times - but we’ll do our best - and they’re free!") ]
+[:h3 "Delivery Method/Timing"] 
+[:p (str "Once you create an account, sign in, download the Junjible software and pay the fee, your access is immediate over the web.  However, you must have an existing, paid, Minecraft account to use Junjible. ") ]
+[:h3 (str "Refunds/Returns")] 
+[:p (str "The monthly fee is non-refundable, but may be cancelled at any time by accessing this link: <a href='/support' class='uline'>http://www.junjible.com/support</a>") ]
+[:p (str "From time to time we may offer additional items for a fee (excluding specifically the basic rental of server space as discussed two paragraphs up) and for those items we’ll guarantee that they work as promised or we’ll refund 100% your money with no questions asked.") ]
+[:h3 (str "The One Major Rule")] [:p]
+[:p (str "Do not distribute anything we've made. This includes, but not limited to, the client or the server software for Junjible. This also includes modified versions of anything we've made. Also, you may not resell any gift codes or licence keys - but of course you can give gift codes as gifts. This is necessary so that we can help stop piracy and fraud - and especially users buying keys that have been fraudulently obtained.")]
+[:h3 (str "What You Can Do")] [:p]
+[:p (str "You can use all of our items and environments.  You can make your own items and submit them to the Junjible Store.  You can access your account (with as many other users as you’ve signed up for) any time, day or night.") ]
+[:h3 (str "Other")] [:p]
+[:p (str "We reserve the right to change this agreement at any time with or without notice, with immediate and/or retroactive effect.") ]
+[:p (str "Any suggestions made are assumed to be offered for free unless otherwise agreed before the suggestion was made. We're not going to put up a huge EULA. We're trying to be open and honest, and we hope people treat us the same way back.")]
+[:p (str "If there's anything legal you're wondering about that isn't answered from this page, don't do it and <a href='http://www.junjible.com/support' class='uline'>ask us about it</a>. Basically, don't be ridiculous and we won't.")]
+[:h3 (str "Company Information")]
+[:p
+(str "Chresco, LLC") [:br]
+(str "143 Ave. Patero de Oro") [:br]
+(str "San Clement, CA 92672") [:br][:br]
+[:a {:href "mailto:support@junjible.com"
+     :class "uline"}
+ (str "support@junjible.com")]
+]
+]])
+
+(defpage "/about" []
+
+
+      (common/layout
+       "panel"
+       (str
+        (common/layout-header)
+        (html
+         [:div#thePanel]
+         [:div#panelNav {:class "container gradient aboutNav"}
+          [:div#panelExplanation.row
+           [:div {:class "twelvecol last gradient"}
+            [:span [:mark "submenu"]]
+            ]
+           ]
+          [:div.row
+           [:div {:class "twelvecol last"}
+            [:ul#tabNav
+             [:li.current [:a#about-tab.gradient {:href "#"}
+                           "About"]]
+             [:li [:a#tour-tab.gradient {:href "#"}
+                   "Tour"]]
+             [:li [:a#contact-tab.gradient {:href "#"}
+                   "Contact"]]
+             [:li [:a#privacy-tab.gradient {:href "#"}
+                   "Privacy Policy"]]
+             [:li [:a#terms-tab.gradient {:href "#"}
+                   "Terms of Use"]]
+             ]
+            ]
+           ]
+          ]
+         [:div#panelContainer.container
+          [:div.row
+           [:div#tabContainer {:class "twelvecol last",
+                               :ontouchstart "touchStart(event,'tabContainer');",
+                               :ontouchend "touchEnd(event);",
+                               :ontouchmove "touchMove(event);",
+                               :ontouchcancel "touchCancel(event);"}
+            (aboutAbout)
+            (aboutTour)
+            (aboutContact)
+            (aboutPrivacy)
+            (aboutTerms)
+            ]
+           ]
+          ] ;; panelContainer
+         [:div#aboutSection {:class "container gradient"}
+          [:section
+           [:div#notes {:class "twelvecol last", :style "display:none;"}
+            [:div#contactInfo.gradient
+             [:div#contactRight
+              [:p#notification
+               [:img {:src "/images/loading-gear.gif"}]
+               [:em#notify-text "Rebooting server..."]
+               ]
+              ]
+             ]
+            ]
+           ]
+          ];; aboutSection
+         )
+        (common/layout-footer)
+        )))

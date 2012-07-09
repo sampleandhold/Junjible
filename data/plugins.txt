@@ -1,0 +1,170 @@
+P1:
+name:Swords of Fire
+description:This plugin adds swords of all minerals that set entities hit on fire.
+ids:I3
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/fireswords/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/fireswords/t.png">
+permissions:
+category:Items
+available:true
+featured:false
+P2:
+name:RPG Mod Pack
+description:This plugin adds tons of things to make Minecraft more RPG. These are: Ale (full brewing, makes you drunk), Real Villagers (with AI and that make stores), Money, Quests, Guilds and Parties.
+ids:MP1,C5,I9,I6,I3
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/rpg/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/rpg/t.png">
+permissions: 
+category:Mod Packs
+available:true
+featured:false
+P3:
+name:Guns Pack
+description:This plugin adds an assault rifle, a handgun, a rifle and grenades.
+ids:I10
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/guns/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/guns/t.png">
+permissions: 
+category:Items
+available:true
+featured:true
+P3:
+name:World Editor
+description:This plugin allows selection and manipulation of areas in the world.
+ids:C2
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/worldedit/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/worldedit/t.png">
+permissions:worldedit,wand 
+category:Admin
+available:true
+featured:true
+P4:
+name:World Guardian
+description:This plugin adds regions and nerfing capabilities for various world-damaging things.
+ids:C3
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/worldguard/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/worldguard/t.png">
+permissions:god,heal,nerf,region,lava,water,build,tnt
+category:Admin
+available:true
+featured:true
+P5:
+name:Nicknames
+description:This plugin adds the ability for players to set their name in-game.
+ids:C4
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/nicks/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/nicks/t.png">
+permissions:nickname
+category:Admin
+available:true
+featured:false
+P6:
+name:Guilds and Parties
+description:This plugin adds guilds and parties to Minecraft!
+ids:R3
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/guild/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/guild/t.png">
+permissions:party,guild
+category:Admin
+available:true
+featured:false
+P7:
+name:Realistic Names
+description:This plugin makes the labels above players heads render realistically - if you can see them you see their name.
+ids:R6
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/names/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/names/t.png">
+permissions:
+category:Admin
+available:true
+featured:false
+P8:
+name:Economy
+description:This plugin adds economy to the game using the /money command.
+ids:R8
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/money/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/money/t.png">
+permissions:money
+category:Admin
+available:true
+featured:false
+P9:
+name:Ale
+description:This plugin adds ale and brewing
+ids:I9
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/ale/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/ale/t.png">
+permissions: 
+category:Items
+available:true
+featured:true
+P10:
+name:Scimitars
+description:This plugin adds scimitars to the game.
+ids:I6
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/scimitars/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/scimitars/t.png">
+permissions: 
+category:Items
+available:true
+featured:false
+P11:
+name:Better Commands
+description:This plugin re-writes all the current commands to be better.
+ids:C1
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/t.png">
+permissions:weather,gamemode,give,time,tp,ban,kick,stop,pardon,say,xp,save,setspawn,spawn
+category:Admin
+available:true
+featured:false
+P12:
+name:Mammoth
+description:This plugin adds a mammoth.
+ids:E3
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/t.png">
+permissions:
+category:Animals
+available:false
+featured:false
+P13:
+name:Bear
+description:This plugin adds a bear.
+ids:E4
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/t.png">
+permissions:
+category:Animals
+available:false
+featured:false
+P14:
+name:Rabbit
+description:This plugin adds a rabbit.
+ids:E5
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/t.png">
+permissions:
+category:Animals
+available:false
+featured:false
+P15:
+name:More Animals
+description:This plugin adds a bunch of animals.
+ids:E5,E4,E3
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/commands/t.png">
+permissions:
+category:Animals
+available:false
+featured:false
+P16:
+name:Obsidian Crafting
+description:This plugin adds obsidian ingots and items.
+ids:I4
+screenshot a:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/obsidian/1.png">
+thumbnail:  <img src="https://github.com/Nematte/Junjible-Server/raw/master/plugins/obsidian/t.png">
+permissions:
+category:Items
+available:true
+featured:false

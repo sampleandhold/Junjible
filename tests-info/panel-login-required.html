@@ -1,0 +1,377 @@
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="refresh" content="300"> <!-- Reload in 5 Minutes-->
+  <title>Cavapanel Unit Testing</title>
+  <link rel="stylesheet" href="res/qunit.css" />
+  <script src="/js/jquery.js"></script>
+</head>
+<body>
+  <div id="qunit"></div>
+  <script src="res/qunit.js"></script>
+  <script>  
+	// AUTHENTICATION
+	//
+	var authentication = {
+		user: 'testuser',
+		pass: 'password',
+		sublogin: 1
+		};
+	
+	// Login
+	//
+	function loginTest() {
+	$.post('/login',
+		authentication,
+		function reqHandler (data) {
+			test('Client Login',
+				function loginTesting () {
+					ok(data.indexOf('logout') > 0, true, 'Logged in?');
+				});
+		});
+	}
+
+	loginTest();
+
+	
+	// Signup Test
+	//
+	function signup() {
+	$.post('/signup',
+		{ subjoin: 1,
+	       	user: 'guest',
+		pass: 'guest',
+		email: 'guest@guest.com' },
+		function reqHandler(data) {
+			test('Register New User - This is stub',
+				function registerTest() {
+					ok(data.toString(), data.toString(), data.toString());
+				});		
+			});
+	}
+
+	signup();
+  </script>
+  <!-- AUTH Functions Above -->
+  
+  <script>
+	// Valid User Tests
+	//
+	function userTests() {
+		$.get('/server/get-user',
+			function reqHandler (data) {
+				var user = data.user;
+				var email = user.email;
+				var minecraft = user.minecraft;
+				var name = user.name;
+				test('User Data',
+					function () {
+						equal(user != '', true, user);
+					});
+				test('User E-mail',
+					function () {
+						equal(email != '', true, email);
+					});
+				test('User Minecraft',
+					function () {
+						equal(minecraft != '', true, minecraft);
+					});
+				test('User Name',
+					function () {
+						equal(name != '', true, name);
+					});
+				// Change Password
+				//
+				var changePass = {
+					'user[password]':'password',
+					'user[newpassword]':'password',
+					'user[email]': email,
+					'user[minecraft]': minecraft
+					};
+
+				$.post('/server/save-user',
+					changePass,
+					function reqhandler (data) {
+						success = data.saved;
+						test('User Change Password',
+						function () {
+								var ret = [];
+								for (var v in changePass) {
+									ret.push(v + ':' + changePass[v]);
+								}
+								equal(success, true, ret.join('\r\n'));
+							});
+					});
+			});
+		}
+	
+	userTests();
+
+	// Group Functions
+	//
+	var groups = {
+		'groups[0][groupname]': 'A better group',
+		'groups[0][groupmembers][0][name]': 'testuser'
+		};
+
+	var delgroups = {'groups[0][groupname]': 'Just this one'};
+
+	// Save Groups
+	//
+	function saveGroups() {
+	$.post('/server/save-groups',
+		groups,
+		function addGroups (data) {
+			var result = data.success;
+			var msg = data.msg;
+			test('Add Groups', function () {
+				equal(msg != '', true, msg);
+			});
+		});
+	}
+	
+	saveGroups();
+	
+	// Get Group Permissions
+	//
+	function getGroupPerms() {
+		$.post('/server/get-permissions',
+		{memeber:'',group:'test-group'},
+		function getGroups (data) {
+			for (var i in data) {
+				test('Get Groups ' + i, function () {
+					equal(data[i] != '',
+						true,
+						"Not empty => " + i);
+				});
+			}
+		});
+	}
+	
+
+	getGroupPerms();
+
+	// Member Functions
+	//
+	var addMemeber = {
+		'players[]': 'testuser',
+		'groups[0][groupname]': 'A better group',
+		'groups[0][groupmembers][0][name]': 'testuser'
+		};
+
+	var delMember = {
+		'players[]':'testuser',
+		'groups[0][groupname]': 'A better group',
+		};
+	
+	var getMember = {
+		'member': 'testuser',
+		'group': 'A better group'
+		};
+
+	var userPermChange = {
+		'member':'testuser',
+		'group':'',
+		'special':[['ban',true]['whitelist',true]],
+		'basic':[
+			['gamemode',true],['give',true],
+			['kick',true],['pardon',true],
+			['save',true],['say',true],
+			['stop',true],['time',true],
+			['tp',true],['wand',true],
+			['weather',true],['xp',true]],
+			'plugin':[
+				{'name':'superplug','plugperms':[['splish',true],
+					['splash',true],['take a bath',true]]},
+		       		{'name':'wonderplug','plugperms':[['life',true],
+					['liberty',true],['happiness',true]]},
+				{'name':'nastyplug','plugperms':[['bleed',true],
+					['itch',false],['hyperventilate',true]]}]
+			};
+
+	// Add member to default group
+	//
+	function userToGroup() {
+	$.post('/server/save-groups',
+		addMemeber,
+		function reqHandler (data) {
+			var result = data.success;
+			test('Add Group Member', function() {
+				equal(result, true, data.msg);
+			});
+		});
+	}
+
+	userToGroup();
+
+	// Change User Permissions
+	//
+	function userPermSwap() {
+		$.post('/server/save-permissions',
+			userPermChange,
+			function reqHandler(data) {
+				var result = data.success;
+				test('Change User Permissions', function() {
+					equal(result, true, data.msg);
+				});
+			});			
+	}
+
+	userPermSwap();	
+
+	// Get member permissions
+	//
+	function userPermissions() { 	
+	$.post('/server/get-permissions',
+		getMember,
+		function reqHandler (data) {
+			for (var i in data) {
+				function handler(name, detail) {
+					test('User Has Permissions for '+name,
+						function () {
+							equal(detail != '', true, detail);
+						});
+				} // handler
+				handler(i,data[i]);
+			} // end for	
+		});
+	}
+
+	userPermissions();
+
+	// Delete member from default group
+	//
+	function removeUser() {
+	$.post('/server/save-groups',
+		delMember,
+		function reqHandler (data) {
+			var result = data.success;
+			var msg = data.msg;
+			test('Delete Group Member', function() {
+				equal(result != '', true, msg);
+			});
+		});
+	}
+
+	removeUser();
+	
+	// Plugins section
+	//
+	var addPlugs = {
+		'plugins[0][featured]': true,
+		'plugins[0][name]': 'Test Plugin',
+		'plugins[0][activated]': false,
+		'plugins[0][category]': 'cool plugins',
+		'plugins[0][desc]': 'Long description here',
+		'plugins[0][thumburl]': '/images/puppies.jpg',
+		'plugins[0][screenshoturl][]': 'http://www.thedarkwheel.co.uk/wp-content/uploads/2010/09/Minecraft3-thumb-640x359-44598.jpg',
+		'plugins[0][settings[0][setting1]': true
+		};
+	// Add User Plugins
+	//
+	function addUserPlugs () {
+	$.post('/server/save-userplugins',
+		addPlugs,
+		function reqHandler (data) {
+			var result = data.success;
+			var msg = data.msg;
+			test('Add User Plugins', function () {
+				equal(result, true, msg);
+			});
+		});
+	}
+
+	addUserPlugs();
+
+	// Get User Plugins
+	//
+	function getUserPlugs () {
+	$.get('/server/get-plugins',
+		function reqHandler (data) {
+			for (var i in data) {
+				var name = i;
+				var value = data[i];
+				test('Plugin Check ' + name,
+				function () {
+					equal(value.length > 0, true, value.desc);
+				});	
+			}
+		});
+	}
+
+	getUserPlugs();
+
+	// Delete Plugins
+	//
+	function delUserPlugs () {
+	$.post('/server/save-userplugins', {}, function reqHandler (data) {
+			var result = data.success;
+			var msg = data.msg;
+			test('Delete All Plugins - This is stub', function () {
+				equal(result, true, msg);
+			});	
+		});
+	}
+
+	delUserPlugs();
+
+	var worlds = {
+		'worlds[0][name]': 'A better world',
+		'worlds[0][online]': false,
+		'worlds[0][private]': false,
+		'worlds[0][motd]': 'Message of the day',
+		'worlds[0][whitelist]': ''
+		};
+
+	var delworlds = {
+		'worlds[0][name]': 'Empty-World',
+		'worlds[0][online]': false,
+		'worlds[0][private]': true,
+		'worlds[0][motd]': 'Message of the day',
+		'worlds[0][whitelist]': ''
+		};
+	// Create World
+	//
+	function createWorld() {
+	$.post('/server/save-worlds',
+		worlds,
+		function reqHandler (data) {
+			var result = data.success;
+			test('Create World', function() {
+				equal(result, true, data.msg);
+			});
+		});
+	};
+
+
+	// Delete Worlds	
+	//
+	function deleteWorld() {
+		$.post('/server/save-worlds',
+		delworlds,
+		function reqHandler (data) {
+			var result = data.success;
+			test('Delete Worlds', function() {
+				equal(result, true, data.msg);
+			});
+		});
+	}
+
+	// World Tests
+	//
+	createWorld();
+	setTimeout('deleteWorld();',500);
+
+	// Log Results
+	//
+	function logResults () {
+		var data = document.getElementById('qunit-testresult').innerHTML;
+		var pass = data.split('"passed">')[1].split('<')[0];
+		var fail = data.split('"failed">')[1].split('<')[0];
+		$.get('/unit-test/' + pass + '/' + fail);
+	}
+
+	setTimeout('logResults()', 2000);
+</script>
+</body>
+</html>

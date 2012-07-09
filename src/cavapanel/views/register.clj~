@@ -1,0 +1,259 @@
+(ns cavapanel.views.register
+  (:require [cavapanel.views.common :as common]
+            [hiccup.page-helpers :as web]
+            [noir.validation :as valid]
+            [noir.session :as session]
+            [noir.cookies :as cookies]
+            [noir.response :as response])
+  (:use [clojure.java.shell :only [sh]]
+        [noir.core]
+        [hiccup.core]
+        [cavapanel.database]))
+
+(defpartial error-item [[first-error]]
+  [:span.error first-error])
+
+;; (defpage "/signup" [{:keys [user pass email]}]
+; (defpage "/signup" []
+(defpage "/signup" {:as userreg}
+  (common/layout
+   "intro"
+   (str
+    ;;(common/layout-header)
+    (html ;; about
+     [:hgroup
+[:div.logo-abs]
+      [:section
+       [:div.register.graybox
+        [:form {:method "POST", :action "/signup"}
+         [:table {:align "left", :border "0", :cellspacing "0", :cellpadding "3"}
+          [:tr
+           [:td {:colspan "2", :align "left", :style "text-align;left"}
+            (valid/on-error :user error-item)
+            ]
+           ]
+          [:tr
+           [:td "Username:"]
+           [:td [:input {:type "text", :name "user", :maxlength "30",
+                         :value (:user userreg)}]]
+           [:td {:style "text-align:left;"}]
+           ]
+          [:tr
+           [:td {:colspan "2", :align "left", :style "text-align;left"}
+            (valid/on-error :pass error-item)
+            ]
+           ]
+          [:tr
+           [:td "Password:"]
+           [:td [:input {:type "password", :name "pass", :maxlength "30",
+                         :value (:pass userreg)}]]
+           [:td {:style "text-align:left;"}]
+           ]
+          [:tr
+           [:td {:colspan "2", :align "left", :style "text-align;left"}
+            (valid/on-error :email error-item)
+            ]
+           ]
+          [:tr
+           [:td "Email:"]
+           [:td [:input {:type "text", :name "email", :maxlength "50",
+                         :value (:email userreg)}]]
+           [:td {:style "text-align:left;"}]
+           ]
+          [:tr
+;;           [:td {:colspan "2", :align "left"}
+           [:td {:colspan "2", :align "left", :style "text-align;left"}
+            [:input {:type "hidden", :name "subjoin", :value "1"}]
+            [:input#login-button {:type "submit", :value "register"}]
+            ]
+           ]
+          ]
+         ]
+        "Register now and get all kinds of minecraft love from your friends at NPanel"
+        [:div.clear]
+        ]
+       ]
+      ]
+     )
+    (common/layout-footer)
+    )))
+
+(defn reg-valid? [{:keys [user pass email]}]
+  (valid/rule (valid/min-length? user 2)
+             [:user "The username must have more than 2 letters."])
+  (valid/rule (valid/min-length? pass 3)
+             [:pass "The password must have more than 3 letters."])
+  (valid/rule (valid/min-length? email 4)
+             [:email "The e-mail must have more than 4 letters."])
+  (not (valid/errors? :user :pass :email)))
+
+;; make sure user and email are not used
+;; upon trouble
+;;        (valid/set-error :email "Sorry, your e-mail is not authorized.")
+;; return false
+(defn signup [{:keys [user pass email]}]
+  (if (sismember "users" user)
+    (do (valid/set-error :user "Sorry, that username is already taken.")
+        false)
+    (if (emailused? email)
+      (do (valid/set-error :user "Sorry, that e-mail is claimed by another user.")
+          false)
+      (do
+        ;; set :minecraft name to :username by default
+        (add-user user {:pass pass, :email email, :minecraft user})
+        ;; add default group with the user called "Default"
+        (add-usergroup user "Default")
+        (update-usergroup user "Default" user)
+        (add-userworld user "My World")
+        (update-userworld user "My World"
+                          {:motd (str "Welcome to " user " world")
+                           :online "true"
+                           :private "true"})
+        (add-userinstance user "My Server")
+        (update-userinstance user "My Server"
+                             {:host "localhost"
+                              :port "25565"
+                              :maxheap "1024m"
+                              :world "My World"
+                              :status "stopped : initial configuration"})
+        (println "new user registration: " user)
+        true))))
+
+(defn allowed-email? [email & attempt]
+  (let [allowed (smembers "allowed:emails")]
+    (if (get allowed email)
+      (do
+        (println "new email: " email " is allowed:" allowed)
+        true)
+      (do
+        (println "new email: " email " not in:" allowed)
+        (valid/set-error :email "Sorry, your e-mail is not authorized.")
+        false))))
+
+(defpage [:post "/signup"] {:as userreg}
+  (if (and (reg-valid? userreg)
+           (allowed-email? (:email userreg))
+           (signup userreg))
+;;           (signup (:user userreg) (:pass userreg) (:email userreg)))
+    (common/layout
+     "intro"
+     (str
+      (common/layout-header)
+      (html ;; SUCCESS
+       [:hgroup
+[:div.logo-abs]
+        [:section
+         [:div.register.graybox
+          [:h3 "Registered!"]
+          "Thank you " [:b (:user userreg)]
+          " ... You may now "
+              [:form#login-form {:method "POST", :action "/login"}
+[:span
+        [:input (let [attr {:type "checkbox", :name "remember"}
+                      checked (if (lastuser) (hash-map "checked" "true"))]
+                  (merge attr checked))]
+[:font {:size "1"} "Remember me &nbsp;"]
+       [:input {:type "text", :name "user", :class "text-field", :maxlength "30", :size "40", :value (lastuser)}]
+
+       [:input {:type "password", :name "pass", :class "text-field", :maxlength "30", :size "40", :value ""}]
+
+        
+        [:input {:type "hidden", :name "sublogin", :value "1"}]
+        [:input#login-button.login {:type "submit", :value "Login"}]
+        ]]
+          [:div.clear]
+          ]
+         ]
+        ]
+       )
+      ))
+    (render "/signup" userreg)))
+     
+(defpage [:post "/login"] {:as userlogin}
+  (do
+    (println "/login" userlogin)
+    ;;    (if (login? userlogin)
+    (let [loginresult (login? userlogin)]
+      (println "loginresult:" loginresult)
+      (if loginresult
+        (let [flash (session/flash-get)]
+          ;; DEBUG
+          (println "user URI flash:" flash)
+          (response/redirect (if (nil? flash) "/panel" flash)))
+        (do
+          (println "Login failed for: " (:user userlogin))
+          (common/layout
+           "intro"
+           (str
+            (html ;; Login Failed
+             [:hgroup
+[:div.logo-abs]
+              [:section
+               [:div.register.graybox
+                [:h3 "Login Failed!"]
+                    [:form#login-form {:method "POST", :action "/login"}
+[:span
+        [:input (let [attr {:type "checkbox", :name "remember"}
+                      checked (if (lastuser) (hash-map "checked" "true"))]
+                  (merge attr checked))]
+[:font {:size "1"} "Remember me &nbsp;"]
+       [:input {:type "text", :name "user", :class "text-field", :maxlength "30", :size "40", :value (lastuser)}]
+
+       [:input {:type "password", :name "pass", :class "text-field", :maxlength "30", :size "40", :value ""}]
+
+        
+        [:input {:type "hidden", :name "sublogin", :value "1"}]
+        [:input#login-button.login {:type "submit", :value "Login"}]
+        ]]
+                [:div.clear]
+                ]
+               ]
+              ]
+             )
+            )))))))
+
+(defpage [:any "/logout"] {}
+  (do
+    (if (user?) (logout))
+    (response/redirect "/")))
+
+
+(defpage "/debug" []
+  (common/layout
+   "intro"
+   (str
+    (common/layout-header)
+    (html ;; about
+     [:div.debug
+       "This is the debug page"
+       [:ul
+        [:li "allowed:emails: "
+         (let [allowed (set (smembers "allowed:emails"))]
+           (flush)
+           (println "hi, I'm in the debug page now:" allowed)
+           (println "waiting...")
+           (flush)
+           (Thread/sleep 10000)
+           (flush)
+           (println "...done")
+           (flush)
+           (str allowed))
+         ]
+        [:li "environment: " ]
+        [:textarea.debug {:rows "20", :cols "132"}
+         (let [env (java2hash (System/getenv))]
+           (escape-html (apply str (for [k (sort (keys env))]
+                                     (str (name k) " = " (k env) "\n")))))
+         ]
+        [:li "cava-instance:" ]
+        [:textarea.debug {:rows "20", :cols "132"}
+         ;; (let [cmd (list "cal" "-h")]
+         (let [cava-instance (str (System/getenv "CAVASERVER") "/bin/cava-instance")
+               cmd (list cava-instance "-d" "-v" "status")]
+           (println "executing:" cmd)
+           (escape-html (str (apply sh cmd))))
+         ]
+        ]
+      ])
+    (common/layout-footer)
+    )))

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- This is the initial database for cavapanel -->
+<database>
+  <set k="allowed:emails">
+    <m v="testuser@email.com" />   
+    <m v="theinternet@yandex.com" />
+    <m v="tmarble@info9.net" />
+    <m v="raison@chatsubo.net" />
+    <m v="raison@gmail.com" />
+    <m v="quinn@nematte.com" />
+    <m v="quinn.finney@gmail.com" />
+    <m v="mail.voidware@gmail.com" />
+    <m v="jake@nematte.com" />
+  </set>
+</database>

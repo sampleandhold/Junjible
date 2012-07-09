@@ -1,0 +1,38 @@
+#!/bin/sh
+# add-perms
+# add basic permissions
+
+dir="$(dirname $0)"
+cavapanel="$dir/cavapanel"
+verbose=$1
+if [ -z "$verbose" ]; then
+    verbose=""
+else
+    verbose="-v"
+fi
+
+special="banned"
+
+# the basic list is derived from 
+# find ~/src/maas.github/Junjible-Server -name '*.java' | xargs fgrep 'hasPermission("' | awk -F\" '{ print $(NF -1); }' | sort -u | tr '\n' ' '
+# NOTE: manually remove: * ban -- they are special!
+# REMOVE plugin perms (see add-plugins)
+# and see cavapanel/data/perms.txt and pluginperms.txt
+# Quinn says
+#   Neither should be included - the jail plugin is non functioning and the 
+#   vil command is dev only.
+# Quinn says he's adding:  tnt lava water to a plugin
+basic="breakspawn permissions test whitelisted"
+
+perms=""
+for p in $special; do
+  perms="$perms $p true"
+done
+for p in $basic; do
+  perms="$perms $p false"
+done
+
+# NOTE treat * as a special permission (and it must be escaped)
+echo $cavapanel $verbose -b UPDATE-PERMISSIONS $perms '*' true
+$cavapanel run $verbose -b UPDATE-PERMISSIONS $perms '*' true
+

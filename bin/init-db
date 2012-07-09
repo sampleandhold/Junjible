@@ -1,0 +1,19 @@
+#!/bin/sh
+# initialize cavapanel database
+
+dir="$(dirname $0)"
+cavapanel="$dir/cavapanel"
+
+echo "Creating cavapanel jar..."
+$cavapanel rejar
+
+echo "Loading allowed users ..."
+$MAAS/clojure/redis2xml/bin/redis2xml --import $MAAS/web/cavapanel/data/database.xml
+
+echo "Adding plugins..."
+$dir/add-plugins
+
+echo "Adding permissions..."
+$dir/add-perms
+
+

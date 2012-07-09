@@ -1,0 +1,219 @@
+#!/bin/sh
+# add-plugins
+# add plugin info
+
+dir="$(dirname $0)"
+cavapanel="$dir/cavapanel"
+verbose=$1
+if [ -z "$verbose" ]; then
+    verbose=""
+else
+    verbose="-v"
+fi
+
+set -x
+# the basic list is derived from 
+# find ~/src/maas.github/Junjible{,-Server} -name '*.java' | xargs fgrep 'modMap.contains' | awk -F\" '{ print $(NF -1); }' | sort -u | tr '\n' ' '
+# NOTE E3 E4 E5 under development
+plugins="B1 C1 C2 C3 C4 E1 E2 G1 I1 I10 I2 I3 I4 I5 I6 I7 I8 I9 MP1 R2 R3 R4 R5 R6 R7 R8 E3 E4 E5"
+
+echo "Add the categories..."
+# awk -F: '/^category/ { print "\"" $2 "\""; }' ~/src/maas.github/Junjible-Server/plugins/plugins.txt  | sort -u
+# add generic as the default
+$cavapanel run $verbose -b UPDATE-CATEGORIES "Admin" "Items" "Mod Packs" "Animals" "generic"
+
+echo "Add the plugins..."
+$cavapanel run $verbose -b UPDATE-PLUGINS $plugins
+
+# set to unavailable by default
+for plugin in $plugins; do
+  $cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+    $plugin \
+    name $plugin \
+    desc "This is the super cool $plugin plugin" \
+    category "generic" \
+    available false \
+    featured false \
+    thumburl "/images/plugins/generic/t.png" \
+    screenshoturl "/images/plugins/generic/1.jpg|/images/plugins/generic/2.jpg|/images/plugins/generic/3.jpg"
+done
+
+# ------ plugin details -------------------
+# from plugins.txt
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  I3 \
+  name "Swords of Fire" \
+  desc "This plugin adds swords of all minerals that set entities hit on fire." \
+  category "Items" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/flameswords/1.png"
+
+# ids:MP1,C5,I9,I6,I3
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  MP1 \
+  name "RPG Mod Pack" \
+  desc "This plugin adds tons of things to make Minecraft more RPG. These are: Ale (full brewing, makes you drunk), Real Villagers (with AI and that make stores), Money, Quests, Guilds and Parties." \
+  category "Mod Packs" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/rpg/1.png"
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  I10 \
+  name "Guns Pack" \
+  desc "This plugin adds an assault rifle, a handgun, a rifle and grenades." \
+  category "Items" \
+  available true \
+  featured true \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/guns/1.png"
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  C2 \
+  name "World Editor" \
+  desc "This plugin allows selection and manipulation of areas in the world." \
+  category "Admin" \
+  available true \
+  featured true \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/worldedit/1.png"
+$cavapanel run $verbose -b UPDATE-PLUGINPERMS C2 worldedit wand 
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  C3 \
+  name "World Guardian" \
+  desc "This plugin adds regions and nerfing capabilities for various world damaging things." \
+  category "Admin" \
+  available true \
+  featured true \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+$cavapanel run $verbose -b UPDATE-PLUGINPERMS C3 god heal nerf region lava water build tnt
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  C4 \
+  name "Nicknames" \
+  desc "This plugin adds the ability for players to set their name in-game." \
+  category "Admin" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/nicks/1.png"
+$cavapanel run $verbose -b UPDATE-PLUGINPERMS C4 nickname
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  R3 \
+  name "Guilds and Parties" \
+  desc "This plugin adds guilds and parties to Minecraft\!" \
+  category "Admin" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/generic/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+$cavapanel run $verbose -b UPDATE-PLUGINPERMS R3 party guild
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  R6 \
+  name "Realistic Names" \
+  desc "This plugin makes the labels above players heads render realistically - if you can see them you see their name." \
+  category "Admin" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/names/t.png" \
+  screenshoturl "/images/plugins/names/1.png"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  R8 \
+  name "Economy" \
+  desc "This plugin adds economy to the game using the /money command." \
+  category "Items" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/money/t.png" \
+  screenshoturl "/images/plugins/money/1.png"
+$cavapanel run $verbose -b UPDATE-PLUGINPERMS R8 money
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  I9 \
+  name "Ale" \
+  desc "This plugin adds ale and brewing" \
+  category "Items" \
+  available true \
+  featured true \
+  thumburl "/images/plugins/ale/t.png" \
+  screenshoturl "/images/plugins/ale/1.png"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  I6 \
+  name "Scimitars" \
+  desc "This plugin adds scimitars to the game." \
+  category "Items" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/scimitars/t.png" \
+  screenshoturl "/images/plugins/scimitars/1.png"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  C1 \
+  name "Better Commands" \
+  desc "This plugin re-writes all the current commands to be better." \
+  category "Admin" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/commands/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+$cavapanel run $verbose -b UPDATE-PLUGINPERMS C1 weather gamemode give time tp ban kick stop pardon say xp save setspawn spawn
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  E3 \
+  name "Mammoth" \
+  desc "This plugin adds a mammoth." \
+  category "Animals" \
+  available false \
+  featured false \
+  thumburl "/images/plugins/commands/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  E4 \
+  name "Bear" \
+  desc "This plugin adds a bear." \
+  category "Animals" \
+  available false \
+  featured false \
+  thumburl "/images/plugins/commands/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  E5 \
+  name "Rabbit" \
+  desc "This plugin adds a rabbit." \
+  category "Animals" \
+  available false \
+  featured false \
+  thumburl "/images/plugins/commands/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
+# NOTE "More Animals" depends on E3 E4 E5
+
+$cavapanel run $verbose -b UPDATE-PLUGIN-SETTINGS \
+  I4 \
+  name "Obsidian Crafting" \
+  desc "This plugin adds obsidian ingots and items." \
+  category "Items" \
+  available true \
+  featured false \
+  thumburl "/images/plugins/obsidian/t.png" \
+  screenshoturl "/images/plugins/generic/1.jpg"
+# $cavapanel run $verbose -b UPDATE-PLUGINPERMS
+
